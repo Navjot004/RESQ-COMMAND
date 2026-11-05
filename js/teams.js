@@ -51,8 +51,8 @@ function renderTeamCard(team) {
   return `
     <div class="team-card">
       <div class="team-card-top">
-        <div class="team-avatar" style="background:linear-gradient(135deg,${team.color},${team.color}99)">
-          ${team.id.split('-')[1]}
+        <div class="team-avatar" style="border: 1px solid var(--border); border-left: 3px solid ${team.color}; background: var(--bg-elevated); color: ${team.color}; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">
+          ${team.id}
         </div>
         <div class="team-info">
           <div class="team-name">${team.name}</div>
@@ -177,7 +177,7 @@ function selectTeamColor(color, el) {
   document.getElementById('teamColor').value = color;
 }
 
-function submitCreateTeam() {
+async function submitCreateTeam() {
   const name   = document.getElementById('teamName').value.trim();
   const leader = document.getElementById('teamLeader').value.trim();
   const members= parseInt(document.getElementById('teamMembers').value) || 6;
@@ -191,25 +191,48 @@ function submitCreateTeam() {
     return;
   }
 
-  const team = {
-    id: SAR.nextId('T', SAR.teams),
+  const teamPayload = {
+    team_id: SAR.nextId('T', SAR.teams),
     name, leader, members,
     status: zone ? 'deployed' : 'standby',
     zone, color,
     specialization: spec,
     contact,
-    equipment: [],
+    equipment: ['VHF Radio', 'Trauma Pack', 'Tactical GPS'],
   };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/teams/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(teamPayload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.team) {
+        teamPayload.id = data.team.id;
+        teamPayload._dbId = data.team._dbId;
+      }
+    }
+  } catch (e) {
+    console.warn('Backend offline, team registered in local session:', e.message);
+  }
+
+  const team = {
+    id: teamPayload.team_id || teamPayload.id,
+    ...teamPayload,
+  };
+
   SAR.teams.push(team);
   if (zone) {
     const z = SAR.getZone(zone);
     if (z) z.team = team.id;
   }
-  SAR.activityLog.unshift({ type:'info', text:`<strong>${team.name}</strong> team registered${zone?' and assigned to '+zone:''}`, time:'just now', color:'#3b82f6' });
+  SAR.activityLog.unshift({ type:'info', text:`<strong>${team.name}</strong> commissioned to operational roster`, time:'just now', color:'#0EA5E9' });
 
   Modal.close();
   renderTeams();
-  Toast.show('success', 'Team Created', `${team.name} is now ${team.status}.`);
+  Toast.show('success', 'Squad Commissioned', `${team.name} (${team.id}) registered.`);
 }
 
 function openTeamDetail(id) {

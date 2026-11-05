@@ -49,15 +49,15 @@ function renderDashboard() {
              .slice(0, 8)
              .map(i => {
               const colors = {
-               critical: '#ef4444',
-               high: '#f97316',
-               medium: '#f59e0b',
-               low: '#3b82f6'
-        };
+                critical: '#ef4444',
+                high: '#ea580c',
+                medium: '#d97706',
+                low: '#0284c7'
+              };
 
         return `
             <div class="activity-item">
-                <div class="activity-dot" style="background:${colors[i.priority] || '#3b82f6'}"></div>
+                <div class="activity-dot" style="background:${colors[i.priority] || 'var(--accent)'}"></div>
                 <div class="activity-content">
                     <div class="activity-text">
                         <strong>${i.id}</strong> ${i.title} — ${i.location}
@@ -78,16 +78,16 @@ function renderDashboard() {
         <div class="card">
           <div class="card-header">
             <div class="card-title">
-              <div class="card-title-dot" style="background:var(--orange)"></div>
+              <div class="card-title-dot" style="background:var(--accent-light)"></div>
               Incident Priority
             </div>
           </div>
           <div class="card-body">
             <div class="priority-bars">
               ${priorityBar('CRITICAL', priorityCounts.critical, totalInc, '#ef4444')}
-              ${priorityBar('HIGH',     priorityCounts.high,     totalInc, '#f97316')}
-              ${priorityBar('MEDIUM',   priorityCounts.medium,   totalInc, '#f59e0b')}
-              ${priorityBar('LOW',      priorityCounts.low,      totalInc, '#3b82f6')}
+              ${priorityBar('HIGH',     priorityCounts.high,     totalInc, '#ea580c')}
+              ${priorityBar('MEDIUM',   priorityCounts.medium,   totalInc, '#d97706')}
+              ${priorityBar('LOW',      priorityCounts.low,      totalInc, '#0284c7')}
             </div>
           </div>
         </div>
@@ -96,16 +96,16 @@ function renderDashboard() {
         <div class="card">
           <div class="card-header">
             <div class="card-title">
-              <div class="card-title-dot" style="background:var(--blue)"></div>
+              <div class="card-title-dot" style="background:var(--accent-light)"></div>
               Team Status
             </div>
           </div>
           <div class="card-body">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
               ${teamStatusCard('Deployed',  SAR.teams.filter(t=>t.status==='deployed').length,  '#10b981')}
-              ${teamStatusCard('Standby',   SAR.teams.filter(t=>t.status==='standby').length,   '#3b82f6')}
-              ${teamStatusCard('Returning', SAR.teams.filter(t=>t.status==='returning').length, '#8b5cf6')}
-              ${teamStatusCard('Off-duty',  SAR.teams.filter(t=>t.status==='off-duty').length,  '#475569')}
+              ${teamStatusCard('Standby',   SAR.teams.filter(t=>t.status==='standby').length,   '#64748b')}
+              ${teamStatusCard('Returning', SAR.teams.filter(t=>t.status==='returning').length, '#0ea5e9')}
+              ${teamStatusCard('Off-duty',  SAR.teams.filter(t=>t.status==='off-duty').length,  '#334155')}
             </div>
           </div>
         </div>

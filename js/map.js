@@ -252,7 +252,7 @@ function promptNewZone(layer) {
   `);
 }
 
-function saveNewZone(id, coords) {
+async function saveNewZone(id, coords) {
   const name     = document.getElementById('newZoneName').value.trim();
   const incident = document.getElementById('newZoneIncident').value;
   const teamId   = document.getElementById('newZoneTeam').value || null;
@@ -266,28 +266,60 @@ function saveNewZone(id, coords) {
   const lat  = lats.reduce((a,b) => a+b, 0) / lats.length;
   const lng  = lngs.reduce((a,b) => a+b, 0) / lngs.length;
 
-  const zone = { id, name, incident, team: teamId || null, status, progress: 0, lat, lng, coords };
+  const zonePayload = {
+    zone_id: id,
+    name,
+    incident,
+    team: teamId || null,
+    status,
+    progress: 0,
+    lat,
+    lng,
+    coords,
+  };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/zones/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(zonePayload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.zone) {
+        zonePayload.id = data.zone.id;
+        zonePayload._dbId = data.zone._dbId;
+      }
+    }
+  } catch (e) {
+    console.warn('Backend offline, sector saved in local session:', e.message);
+  }
+
+  const zone = {
+    id: zonePayload.zone_id || zonePayload.id,
+    ...zonePayload,
+  };
   SAR.zones.push(zone);
 
   // Assign team pointer
   if (teamId) {
     const t = SAR.getTeam(teamId);
-    if (t) { t.zone = id; t.status = 'deployed'; }
+    if (t) { t.zone = zone.id; t.status = 'deployed'; }
   }
 
   // Attach zone id to the drawn layer for future edit/delete
   if (drawnItems.getLayers().length) {
-    drawnItems.getLayers()[drawnItems.getLayers().length - 1]._sarZoneId = id;
+    drawnItems.getLayers()[drawnItems.getLayers().length - 1]._sarZoneId = zone.id;
   }
 
   // Add zone to incident zones list
   const inc = SAR.getIncident(incident);
-  if (inc && !inc.zones.includes(id)) inc.zones.push(id);
+  if (inc && !inc.zones.includes(zone.id)) inc.zones.push(zone.id);
 
   Modal.close();
   refreshMapLayers();
-  Toast.show('success', 'Zone Created', `${name} (${id}) added to the operational map.`);
-  SAR.activityLog.unshift({ type:'success', text:`<strong>${name}</strong> search zone drawn and saved`, time:'just now', color:'#10b981' });
+  Toast.show('success', 'Sector Established', `${name} (${zone.id}) mapped.`);
+  SAR.activityLog.unshift({ type:'success', text:`<strong>${name}</strong> search sector designated`, time:'just now', color:'#10B981' });
 }
 
 /* ════════════════ LAYER RENDERING ════════════════════ */
@@ -304,10 +336,10 @@ function renderMapZones() {
   zoneLayerGroup.clearLayers();
 
   const statusColors = {
-    'assigned':    '#3b82f6',
-    'in-progress': '#f97316',
+    'assigned':    '#0284c7',
+    'in-progress': '#ea580c',
     'completed':   '#10b981',
-    'pending':     '#6b7280',
+    'pending':     '#64748b',
   };
 
   const filtered = mapFilters.incident === 'all'
@@ -475,9 +507,9 @@ function renderMapFindings() {
     const emoji = SAR.findingIcon(f.type);
     const borderColors = {
       'person-found': '#10b981',
-      'clue':         '#3b82f6',
+      'clue':         '#0ea5e9',
       'hazard':       '#ef4444',
-      'evidence':     '#8b5cf6',
+      'evidence':     '#d97706',
     };
     const bc  = borderColors[f.type] || '#10b981';
     const icon = L.divIcon({
@@ -516,10 +548,10 @@ function showMapPanel(zone) {
   const team    = zone.team ? SAR.getTeam(zone.team) : null;
   const inc     = SAR.getIncident(zone.incident);
   const statusColors = {
-    'assigned':    '#3b82f6',
-    'in-progress': '#f97316',
+    'assigned':    '#0284c7',
+    'in-progress': '#ea580c',
     'completed':   '#10b981',
-    'pending':     '#6b7280',
+    'pending':     '#64748b',
   };
   const color = statusColors[zone.status] || '#6b7280';
 

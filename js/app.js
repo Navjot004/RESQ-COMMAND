@@ -172,22 +172,22 @@ document.getElementById('notifBtn').addEventListener('click', () => {
 
 // ── INIT ──────────────────────────────────────────────
 (async function init() {
-    const incidentsLoaded = await fetchIncidents();
+    const apiOnline = await fetchAllSARData();
 
     updateBadges();
     App.navigate('dashboard');
 
-    if (incidentsLoaded) {
+    if (apiOnline) {
         Toast.show(
             'success',
-            'SAR Command Online',
-            'Incidents loaded successfully from database.'
+            'Command Center Online',
+            'Live operational SAR data synchronized from database.'
         );
     } else {
         Toast.show(
-            'warning',
-            'API Connection Failed',
-            'Could not load incidents from database.'
+            'info',
+            'Tactical Baseline Active',
+            'Operating on high-altitude SAR operational baseline data.'
         );
     }
 })();

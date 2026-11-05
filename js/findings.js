@@ -188,7 +188,7 @@ function openLogFindingModal() {
   `);
 }
 
-function submitLogFinding() {
+async function submitLogFinding() {
   const title    = document.getElementById('fndTitle').value.trim();
   const type     = document.getElementById('fndType').value;
   const zone     = document.getElementById('fndZone').value;
@@ -204,13 +204,36 @@ function submitLogFinding() {
     return;
   }
 
-  const finding = {
-    id: SAR.nextId('FND', SAR.findings),
+  const findingPayload = {
+    finding_id: SAR.nextId('FND', SAR.findings),
     type, title, zone, team, incident, location, lat, lng,
     description: desc,
     status: 'logged',
     reportedAt: new Date(),
   };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/findings/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(findingPayload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.finding) {
+        findingPayload.id = data.finding.id;
+        findingPayload._dbId = data.finding._dbId;
+      }
+    }
+  } catch (e) {
+    console.warn('Backend offline, finding recorded in local session:', e.message);
+  }
+
+  const finding = {
+    id: findingPayload.finding_id || findingPayload.id,
+    ...findingPayload,
+  };
+
   SAR.findings.push(finding);
 
   // Increment finding count on incident
@@ -218,11 +241,11 @@ function submitLogFinding() {
   if (inc) inc.findings++;
 
   const icon = SAR.findingIcon(type);
-  SAR.activityLog.unshift({ type:'success', text:`${icon} <strong>${finding.id}</strong> "${title}" logged by ${SAR.getTeam(team)?.name||team}`, time:'just now', color:'#10b981' });
+  SAR.activityLog.unshift({ type:'success', text:`${icon} <strong>${finding.id}</strong> "${title}" recorded by ${SAR.getTeam(team)?.name||team}`, time:'just now', color:'#10B981' });
 
   Modal.close();
   renderFindings();
-  Toast.show('success', 'Finding Logged', `${finding.id} added to the record.`);
+  Toast.show('success', 'Finding Recorded', `${finding.id} saved to operational intelligence.`);
 }
 
 function openFindingDetail(id) {

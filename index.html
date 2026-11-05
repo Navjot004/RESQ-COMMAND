@@ -171,10 +171,10 @@
           <div class="map-controls-bar">
             <div class="map-layer-toggles">
               <button class="layer-btn active" data-layer="zones" id="toggleZones">
-                <span class="layer-dot" style="background:#3b82f6"></span> Zones
+                <span class="layer-dot" style="background:#0284c7"></span> Sectors
               </button>
               <button class="layer-btn active" data-layer="teams" id="toggleTeams">
-                <span class="layer-dot" style="background:#f97316"></span> Teams
+                <span class="layer-dot" style="background:#0ea5e9"></span> Squads
               </button>
               <button class="layer-btn active" data-layer="findings" id="toggleFindings">
                 <span class="layer-dot" style="background:#10b981"></span> Findings
@@ -187,32 +187,32 @@
                 <option value="all">All Incidents</option>
               </select>
               <select class="map-filter-select" id="filterByTeamStatus" title="Filter by Team Status">
-                <option value="all">All Team Status</option>
+                <option value="all">All Squad Status</option>
                 <option value="deployed">Deployed</option>
                 <option value="standby">Standby</option>
                 <option value="returning">Returning</option>
                 <option value="off-duty">Off-duty</option>
               </select>
               <button class="layer-btn draw-zone-btn" id="drawZoneBtn" title="Draw a new search zone polygon">
-                ✏️ Draw Zone
+                ✏️ Designate Sector
               </button>
               <button class="layer-btn" id="cancelDrawBtn" title="Cancel drawing" style="display:none;color:var(--red);border-color:rgba(239,68,68,0.4)">
-                ✕ Cancel
+                ✕ Abort
               </button>
             </div>
           </div>
 
           <!-- Row 2: Legend -->
           <div class="map-legend-bar">
-            <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span> Assigned</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#f97316"></span> In Progress</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#0284c7"></span> Assigned</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#ea580c"></span> In Progress</span>
             <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span> Completed</span>
-            <span class="legend-item"><span class="legend-dot" style="background:#6b7280"></span> Pending</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#64748b"></span> Pending</span>
             <span class="legend-item" style="margin-left:16px">
-              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f97316;border:2px solid white;vertical-align:middle"></span> Live Team
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#0ea5e9;border:2px solid #ffffff;vertical-align:middle"></span> Live Unit
             </span>
             <span class="legend-item">
-              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#6b7280;border:2px solid white;vertical-align:middle"></span> Stale (&gt;5 min)
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#64748b;border:2px solid #ffffff;vertical-align:middle"></span> Stale (&gt;5m)
             </span>
           </div>
 

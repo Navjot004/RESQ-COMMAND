@@ -2,6 +2,11 @@ const mongoose = require('mongoose');
 
 const incidentSchema = new mongoose.Schema(
   {
+    incident_id: {
+      type: String,
+      sparse: true,
+      index: true,
+    },
     title: {
       type: String,
       required: true,
@@ -65,7 +70,8 @@ const incidentSchema = new mongoose.Schema(
 
 incidentSchema.methods.serialize = function () {
   return {
-    id: this._id.toString(),
+    id: this.incident_id || this._id.toString(),
+    _dbId: this._id.toString(),
     title: this.title,
     description: this.description,
     location: this.location,

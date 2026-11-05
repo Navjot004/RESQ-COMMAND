@@ -12,6 +12,10 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const incidentsRoutes = require('./routes/incidents');
+const teamsRoutes = require('./routes/teams');
+const zonesRoutes = require('./routes/zones');
+const resourcesRoutes = require('./routes/resources');
+const findingsRoutes = require('./routes/findings');
 
 const app = express();
 const server = http.createServer(app);
@@ -62,6 +66,10 @@ app.get('/api/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/incidents', incidentsRoutes);
+app.use('/api/teams', teamsRoutes);
+app.use('/api/zones', zonesRoutes);
+app.use('/api/resources', resourcesRoutes);
+app.use('/api/findings', findingsRoutes);
 
 // Socket.IO event handling
 io.on('connection', (socket) => {

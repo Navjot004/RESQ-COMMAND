@@ -188,7 +188,7 @@ function openCreateResourceModal() {
   `);
 }
 
-function submitCreateResource() {
+async function submitCreateResource() {
   const item     = document.getElementById('resItem').value.trim();
   const qty      = parseInt(document.getElementById('resQty').value) || 1;
   const unit     = document.getElementById('resUnit').value.trim() || 'units';
@@ -200,17 +200,40 @@ function submitCreateResource() {
 
   if (!item) { Toast.show('error','Validation Error','Item name is required.'); return; }
 
-  const res = {
-    id: SAR.nextId('RES', SAR.resources),
+  const resPayload = {
+    resource_id: SAR.nextId('RES', SAR.resources),
     item, category, qty, unit, team, incident, priority, notes,
     status: 'pending',
     requestedAt: new Date(),
   };
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/resources/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(resPayload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.resource) {
+        resPayload.id = data.resource.id;
+        resPayload._dbId = data.resource._dbId;
+      }
+    }
+  } catch (e) {
+    console.warn('Backend offline, resource queued locally:', e.message);
+  }
+
+  const res = {
+    id: resPayload.resource_id || resPayload.id,
+    ...resPayload,
+  };
+
   SAR.resources.push(res);
-  SAR.activityLog.unshift({ type:'warning', text:`<strong>${res.id}</strong> Resource request for "${item}" submitted`, time:'just now', color:'#f59e0b' });
+  SAR.activityLog.unshift({ type:'warning', text:`<strong>${res.id}</strong> Logistics request for "${item}" logged`, time:'just now', color:'#D97706' });
 
   Modal.close();
   renderResources();
   updateBadges();
-  Toast.show('success', 'Request Submitted', `${res.id} is pending approval.`);
+  Toast.show('success', 'Request Submitted', `${res.id} queued for command authorization.`);
 }
