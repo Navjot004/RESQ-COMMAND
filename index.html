@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Search and Rescue Coordination Platform — Real-time command center for managing SAR operations, teams, zones, and resources." />
+  <title>SAR Command — Search & Rescue Coordination Platform</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet.draw CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+  <link rel="stylesheet" href="css/modals.css" />
+</head>
+<body>
+
+  <!-- ════════════════════════════════════ SIDEBAR ════════════════════════════════════ -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">SAR Command</span>
+        <span class="brand-tagline">Rescue Coordination</span>
+      </div>
+      <button id="sidebarToggle" class="sidebar-toggle" title="Toggle Sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Operations</div>
+      <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        </span>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="map" id="nav-map">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+            <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
+          </svg>
+        </span>
+        <span class="nav-label">Search Map</span>
+      </a>
+      <a href="#" class="nav-item" data-page="incidents" id="nav-incidents">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </span>
+        <span class="nav-label">Incidents</span>
+        <span class="nav-badge" id="incident-badge">3</span>
+      </a>
+      <a href="#" class="nav-item" data-page="teams" id="nav-teams">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        <span class="nav-label">Teams</span>
+      </a>
+      <div class="nav-section-label">Resources</div>
+      <a href="#" class="nav-item" data-page="resources" id="nav-resources">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+        </span>
+        <span class="nav-label">Resources</span>
+        <span class="nav-badge pending" id="resource-badge">5</span>
+      </a>
+      <a href="#" class="nav-item" data-page="findings" id="nav-findings">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </span>
+        <span class="nav-label">Findings</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="connection-status" id="connectionStatus">
+        <span class="status-dot pulse-green"></span>
+        <span class="status-text">Live • Connected</span>
+      </div>
+      <div class="user-profile">
+        <div class="user-avatar">IC</div>
+        <div class="user-info">
+          <span class="user-name">Incident Commander</span>
+          <span class="user-role">Admin Access</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ════════════════════════════════════ MAIN ════════════════════════════════════ -->
+  <main class="main-content" id="mainContent">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title" id="pageTitle">Operation Dashboard</h1>
+        <div class="breadcrumb" id="breadcrumb">
+          <span>SAR Command</span>
+          <span class="bc-sep">›</span>
+          <span id="breadcrumbCurrent">Dashboard</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-bar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" id="globalSearch" placeholder="Search incidents, teams, zones…" />
+        </div>
+        <button class="topbar-btn" id="notifBtn" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="notif-dot"></span>
+        </button>
+        <div class="operation-time">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span id="opTime">00:00:00</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE CONTENT AREA -->
+    <div class="page-container" id="pageContainer">
+
+      <!-- ─── DASHBOARD PAGE ─── -->
+      <section id="page-dashboard" class="page active">
+        <div id="dashboard-root"></div>
+      </section>
+
+      <!-- ─── MAP PAGE ─── -->
+      <section id="page-map" class="page">
+        <div class="map-page-layout">
+
+          <!-- Row 1: Layer toggles + Draw -->
+          <div class="map-controls-bar">
+            <div class="map-layer-toggles">
+              <button class="layer-btn active" data-layer="zones" id="toggleZones">
+                <span class="layer-dot" style="background:#3b82f6"></span> Zones
+              </button>
+              <button class="layer-btn active" data-layer="teams" id="toggleTeams">
+                <span class="layer-dot" style="background:#f97316"></span> Teams
+              </button>
+              <button class="layer-btn active" data-layer="findings" id="toggleFindings">
+                <span class="layer-dot" style="background:#10b981"></span> Findings
+              </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="map-filter-group">
+              <select class="map-filter-select" id="filterByIncident" title="Filter by Incident">
+                <option value="all">All Incidents</option>
+              </select>
+              <select class="map-filter-select" id="filterByTeamStatus" title="Filter by Team Status">
+                <option value="all">All Team Status</option>
+                <option value="deployed">Deployed</option>
+                <option value="standby">Standby</option>
+                <option value="returning">Returning</option>
+                <option value="off-duty">Off-duty</option>
+              </select>
+              <button class="layer-btn draw-zone-btn" id="drawZoneBtn" title="Draw a new search zone polygon">
+                ✏️ Draw Zone
+              </button>
+              <button class="layer-btn" id="cancelDrawBtn" title="Cancel drawing" style="display:none;color:var(--red);border-color:rgba(239,68,68,0.4)">
+                ✕ Cancel
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: Legend -->
+          <div class="map-legend-bar">
+            <span class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span> Assigned</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#f97316"></span> In Progress</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#10b981"></span> Completed</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#6b7280"></span> Pending</span>
+            <span class="legend-item" style="margin-left:16px">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f97316;border:2px solid white;vertical-align:middle"></span> Live Team
+            </span>
+            <span class="legend-item">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#6b7280;border:2px solid white;vertical-align:middle"></span> Stale (&gt;5 min)
+            </span>
+          </div>
+
+          <div class="map-content-area">
+            <div id="leaflet-map"></div>
+            <div class="map-detail-panel" id="mapDetailPanel">
+              <button class="panel-close" id="closeMapPanel">✕</button>
+              <div id="mapPanelContent">
+                <p class="panel-hint">Click a zone or marker to view details</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── INCIDENTS PAGE ─── -->
+      <section id="page-incidents" class="page">
+        <div id="incidents-root"></div>
+      </section>
+
+      <!-- ─── TEAMS PAGE ─── -->
+      <section id="page-teams" class="page">
+        <div id="teams-root"></div>
+      </section>
+
+      <!-- ─── RESOURCES PAGE ─── -->
+      <section id="page-resources" class="page">
+        <div id="resources-root"></div>
+      </section>
+
+      <!-- ─── FINDINGS PAGE ─── -->
+      <section id="page-findings" class="page">
+        <div id="findings-root"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ════════════════════════════════════ MODALS ════════════════════════════════════ -->
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal-box" id="modalBox">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Modal</h2>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ TOAST ════════════════════════════════════ -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet.draw for polygon zone drawing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/incidents.js"></script>
+  <script src="js/teams.js"></script>
+  <script src="js/resources.js"></script>
+  <script src="js/findings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
