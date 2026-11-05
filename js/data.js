@@ -156,7 +156,39 @@ async function fetchFindings() {
   }
 }
 
+function updateConnectionStatusUI(online) {
+  const el = document.getElementById('connectionStatus');
+  if (!el) return;
+  if (online) {
+    el.innerHTML = `
+      <span class="status-dot pulse-green"></span>
+      <span class="status-text">Live • DB Connected</span>
+    `;
+  } else {
+    el.innerHTML = `
+      <span class="status-dot" style="background:#64748b"></span>
+      <span class="status-text" style="color:#94a3b8">Offline • Tactical Cache</span>
+    `;
+  }
+}
+
+async function checkBackendHealth() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/health`, { signal: AbortSignal.timeout(1200) });
+    return res.ok;
+  } catch (err) {
+    return false;
+  }
+}
+
 async function fetchAllSARData() {
+  const isHealthy = await checkBackendHealth();
+  if (!isHealthy) {
+    console.info('ℹ️ Note: Backend API (http://127.0.0.1:8000) not active. Operating in resilient offline tactical mode.');
+    updateConnectionStatusUI(false);
+    return false;
+  }
+
   const [incOk, teamsOk, zonesOk, resOk, fndOk] = await Promise.all([
     fetchIncidents(),
     fetchTeams(),
@@ -166,6 +198,7 @@ async function fetchAllSARData() {
   ]);
 
   isApiOnline = incOk || teamsOk || zonesOk || resOk || fndOk;
+  updateConnectionStatusUI(isApiOnline);
   return isApiOnline;
 }
 

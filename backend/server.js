@@ -97,6 +97,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 8000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 RESQ COMMAND Node.js Server listening on http://127.0.0.1:${PORT}`);
 });

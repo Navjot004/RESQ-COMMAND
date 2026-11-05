@@ -45,12 +45,47 @@ function initMap() {
     attributionControl: true,
   });
 
-  /* ── 2. OpenStreetMap tile layer (no API key required) ── */
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright" style="color:#94a3b8">OpenStreetMap</a> contributors',
+  /* ── 2. Defense-Grade Tactical Basemaps (100% Free, Zero Watermark, No API Key) ── */
+  const esriDarkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ',
+    maxZoom: 16,
+    crossOrigin: true,
+  });
+  const esriDarkRef = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    attribution: '',
+    maxZoom: 16,
+    crossOrigin: true,
+  });
+  const tacticalDarkLayer = L.layerGroup([esriDarkBase, esriDarkRef]);
+
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
     maxZoom: 19,
     crossOrigin: true,
-  }).addTo(sarMap);
+  });
+
+  const topoLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; National Geographic, DeLorme, NAVTEQ',
+    maxZoom: 19,
+    crossOrigin: true,
+  });
+
+  const humanitarianOSM = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles by <a href="https://www.hotosm.org/">Humanitarian Team</a>',
+    maxZoom: 19,
+    crossOrigin: true,
+  });
+
+  // Add default Tactical Dark basemap
+  tacticalDarkLayer.addTo(sarMap);
+
+  const baseMaps = {
+    'Tactical Dark (Esri)': tacticalDarkLayer,
+    'Satellite Recon (Esri)': satelliteLayer,
+    'Topographic Terrain': topoLayer,
+    'Humanitarian SAR (OSM)': humanitarianOSM,
+  };
+  L.control.layers(baseMaps, null, { position: 'topright' }).addTo(sarMap);
 
   /* ── 3. Layer groups ── */
   drawnItems        = new L.FeatureGroup().addTo(sarMap);
