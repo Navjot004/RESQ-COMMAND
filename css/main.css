@@ -891,3 +891,589 @@ textarea.form-control { resize: vertical; min-height: 90px; }
 /* Progress bar */
 .progress-track { height: 8px; background: var(--bg-elevated); border-radius: 4px; overflow: hidden; margin-top: 8px; }
 .progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+
+/* ══════════════════════════════════════════════════════
+   TACTICAL OPERATOR IDENTITY PILL (TOPBAR)
+══════════════════════════════════════════════════════ */
+.topbar-identity-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.topbar-identity-pill:hover {
+  border-color: var(--accent-light);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.12);
+}
+
+.identity-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: #111e38;
+  border: 1px solid #1f3764;
+  color: var(--accent-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 0.76rem;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.identity-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.identity-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.identity-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.identity-callsign {
+  font-size: 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(56, 189, 248, 0.12);
+  color: var(--accent-light);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.identity-role-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.role-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+}
+.role-badge-commander {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.role-badge-coordinator {
+  background: rgba(6, 182, 212, 0.18);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+.role-badge-leader {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.role-badge-logistics {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.identity-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+.identity-status-label {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.switch-role-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+.switch-role-btn:hover {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent-light);
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.3);
+}
+
+/* User profile click cursor in sidebar */
+#sidebarUserProfile {
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 6px;
+  border-radius: 6px;
+}
+#sidebarUserProfile:hover {
+  background: var(--bg-card);
+  border-color: var(--border-light);
+}
+
+/* ══════════════════════════════════════════════════════
+   TACTICAL AUTH OVERLAY & MODAL
+══════════════════════════════════════════════════════ */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(4, 7, 16, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: opacity 0.3s ease;
+}
+.auth-overlay.hidden {
+  display: none !important;
+}
+
+.auth-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  background: #090f1d;
+  border: 1px solid #1f3764;
+  border-radius: 12px;
+  padding: 28px 32px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(2, 132, 199, 0.15);
+  animation: authAppear 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes authAppear {
+  0% { transform: scale(0.96) translateY(12px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Tactical Corner Accents */
+.auth-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+}
+.auth-corner.top-left {
+  top: 8px; left: 8px;
+  border-top: 2px solid #38bdf8;
+  border-left: 2px solid #38bdf8;
+}
+.auth-corner.top-right {
+  top: 8px; right: 8px;
+  border-top: 2px solid #38bdf8;
+  border-right: 2px solid #38bdf8;
+}
+.auth-corner.bottom-left {
+  bottom: 8px; left: 8px;
+  border-bottom: 2px solid #38bdf8;
+  border-left: 2px solid #38bdf8;
+}
+.auth-corner.bottom-right {
+  bottom: 8px; right: 8px;
+  border-bottom: 2px solid #38bdf8;
+  border-right: 2px solid #38bdf8;
+}
+
+/* Header */
+.auth-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #192a4a;
+  position: relative;
+}
+
+.auth-beacon-badge {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #111e38;
+  border: 1px solid #224279;
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+}
+
+.beacon-ring {
+  position: absolute;
+  inset: -4px;
+  border: 1px solid #38bdf8;
+  border-radius: 14px;
+  opacity: 0.4;
+  animation: beaconPulse 2s infinite ease-out;
+}
+.beacon-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #10b981;
+}
+
+@keyframes beaconPulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+
+.auth-title-block {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-classification {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.sec-tag {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  font-size: 0.62rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+}
+.sec-tag-level {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px;
+}
+
+.auth-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.4px;
+  margin: 0;
+}
+.auth-subtitle {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 3px;
+}
+
+.auth-dismiss-btn {
+  background: transparent;
+  border: 1px solid #22375f;
+  color: #94a3b8;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.auth-dismiss-btn:hover {
+  border-color: #ef4444;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Sections */
+.auth-section {
+  margin-top: 18px;
+}
+.auth-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.section-badge {
+  background: #111f3d;
+  color: #38bdf8;
+  border: 1px solid #1f3f72;
+  font-size: 0.66rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.section-desc {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+/* Demo Roles Grid */
+.demo-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.demo-role-card {
+  background: #0f182c;
+  border: 1px solid #1e3357;
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+.demo-role-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; width: 3px; height: 100%;
+  background: #38bdf8;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.demo-role-card.role-card-commander::before { background: #ef4444; }
+.demo-role-card.role-card-coordinator::before { background: #06b6d4; }
+.demo-role-card.role-card-leader::before { background: #10b981; }
+.demo-role-card.role-card-logistics::before { background: #f59e0b; }
+
+.demo-role-card:hover {
+  transform: translateY(-2px);
+  border-color: #38bdf8;
+  background: #13203c;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+}
+.demo-role-card:hover::before {
+  opacity: 1;
+}
+
+.role-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.role-icon {
+  font-size: 1.15rem;
+}
+.role-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+}
+.role-tag-commander {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.role-tag-coordinator {
+  background: rgba(6, 182, 212, 0.18);
+  color: #22d3ee;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+.role-tag-leader {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.role-tag-logistics {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.role-card-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-top: 8px;
+}
+.role-card-meta {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.role-card-meta code {
+  font-family: 'JetBrains Mono', monospace;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+}
+
+.role-card-scope {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin-top: 6px;
+  line-height: 1.35;
+}
+.role-card-click {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Tactical Divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 18px 0 14px;
+  color: #475569;
+  font-size: 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #1a2948;
+}
+.auth-divider span {
+  padding: 0 12px;
+}
+
+/* Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-inputs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.auth-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.auth-input-wrap svg {
+  position: absolute;
+  left: 12px;
+  color: #64748b;
+  pointer-events: none;
+}
+.auth-input-wrap .form-control {
+  padding-left: 36px;
+  background: #0d1527;
+  border-color: #1e3357;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  color: #f1f5f9;
+}
+.auth-input-wrap .form-control:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+
+.auth-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+.auth-submit-btn {
+  width: 100%;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin-bottom: 4px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+.auth-alert.hidden {
+  display: none;
+}
+
+/* Tactical Footer Specs Bar */
+.auth-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #16243f;
+  font-size: 0.65rem;
+  color: #475569;
+  font-family: 'JetBrains Mono', monospace;
+}
+.auth-foot-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.dot-live {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}

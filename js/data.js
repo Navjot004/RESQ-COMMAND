@@ -157,33 +157,356 @@ async function checkBackendHealth() {
   }
 }
 
-// ── AUTHENTICATION TOKEN MANAGEMENT ───────────────────
-let currentAuthToken = localStorage.getItem('sar_token') || null;
+// ── AUTHENTICATION & RBAC CONTROLLER ─────────────────
+const DEMO_ACCOUNTS = {
+  commander:   { email: 'commander@resq.in', password: 'password123', label: 'Incident Commander', role: 'COMMANDER' },
+  coordinator: { email: 'coordinator@resq.in', password: 'password123', label: 'Zone Coordinator', role: 'COORDINATOR' },
+  leader:      { email: 'alpha.lead@resq.in', password: 'password123', label: 'Field Leader (Alpha)', role: 'FIELD_LEADER' },
+  logistics:   { email: 'logistics@resq.in', password: 'password123', label: 'Logistics Officer', role: 'LOGISTICS' },
+};
+
+const Auth = {
+  getToken() {
+    return localStorage.getItem('sar_token') || null;
+  },
+
+  getUser() {
+    try {
+      const u = localStorage.getItem('sar_user');
+      return u ? JSON.parse(u) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  setSession(token, user) {
+    if (token) localStorage.setItem('sar_token', token);
+    if (user) localStorage.setItem('sar_user', JSON.stringify(user));
+    currentAuthToken = token;
+    Auth.updateIdentityUI(user);
+  },
+
+  clearSession() {
+    localStorage.removeItem('sar_token');
+    localStorage.removeItem('sar_user');
+    currentAuthToken = null;
+    Auth.updateIdentityUI(null);
+    Auth.showLoginOverlay(false);
+  },
+
+  updateIdentityUI(user) {
+    const avatarMap = {
+      COMMANDER: 'IC',
+      COORDINATOR: 'ZC',
+      FIELD_LEADER: 'FL',
+      LOGISTICS: 'LO',
+    };
+
+    const roleClassMap = {
+      COMMANDER: 'role-badge-commander',
+      COORDINATOR: 'role-badge-coordinator',
+      FIELD_LEADER: 'role-badge-leader',
+      LOGISTICS: 'role-badge-logistics',
+    };
+
+    const role = user?.role || 'COMMANDER';
+    const name = user?.name || 'Tactical Operator';
+    const callsign = user?.callsign || 'HQ-OPERATOR';
+    const initials = avatarMap[role] || (name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()) || 'OP';
+
+    // Topbar Tactical Identity Pill
+    const topAvatar = document.getElementById('topbarUserAvatar');
+    const topName = document.getElementById('topbarUserName');
+    const topCallsign = document.getElementById('topbarUserCallsign');
+    const topRoleBadge = document.getElementById('topbarUserRoleBadge');
+
+    if (topAvatar) topAvatar.textContent = initials;
+    if (topName) topName.textContent = name;
+    if (topCallsign) topCallsign.textContent = callsign;
+    if (topRoleBadge) {
+      topRoleBadge.textContent = role;
+      topRoleBadge.className = `role-badge ${roleClassMap[role] || 'role-badge-commander'}`;
+    }
+
+    // Sidebar User Profile
+    const sideAvatar = document.getElementById('sidebarUserAvatar');
+    const sideName = document.getElementById('sidebarUserName');
+    const sideRole = document.getElementById('sidebarUserRole');
+
+    if (sideAvatar) sideAvatar.textContent = initials;
+    if (sideName) sideName.textContent = name;
+    if (sideRole) sideRole.textContent = `${role} • ${callsign}`;
+  },
+
+  showLoginOverlay(canDismiss = true) {
+    const overlay = document.getElementById('authOverlay');
+    const dismissBtn = document.getElementById('authDismissBtn');
+    if (!overlay) return;
+
+    if (dismissBtn) {
+      dismissBtn.style.display = (canDismiss && Auth.getUser()) ? 'flex' : 'none';
+    }
+    overlay.classList.remove('hidden');
+
+    const alertBox = document.getElementById('authAlert');
+    if (alertBox) {
+      alertBox.textContent = '';
+      alertBox.classList.add('hidden');
+    }
+  },
+
+  hideLoginOverlay() {
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) overlay.classList.add('hidden');
+  },
+
+  openRoleSwitcher() {
+    Auth.showLoginOverlay(true);
+  },
+
+  async login(email, password) {
+    const alertBox = document.getElementById('authAlert');
+    const submitBtn = document.getElementById('authSubmitBtn');
+    const submitText = document.getElementById('authSubmitText');
+    const spinner = document.getElementById('authSpinner');
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (submitText) submitText.textContent = 'Authenticating...';
+    if (spinner) spinner.classList.remove('hidden');
+    if (alertBox) alertBox.classList.add('hidden');
+
+    try {
+      const res = await nativeFetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || data.message || 'Authentication failed. Please verify credentials.');
+      }
+
+      // Successful tactical authentication
+      Auth.setSession(data.token, data.user);
+      Auth.hideLoginOverlay();
+
+      if (typeof Toast !== 'undefined') {
+        Toast.show(
+          'success',
+          'Tactical Access Granted',
+          `Authenticated as ${data.user.name} [${data.user.role}]`
+        );
+      }
+
+      // Synchronize all tactical data with new role clearance
+      if (typeof fetchAllSARData === 'function') {
+        await fetchAllSARData();
+      }
+      if (typeof updateBadges === 'function') {
+        updateBadges();
+      }
+      if (typeof App !== 'undefined' && App.currentPage) {
+        App.navigate(App.currentPage);
+      }
+
+      return true;
+    } catch (err) {
+      if (alertBox) {
+        alertBox.textContent = `❌ ${err.message}`;
+        alertBox.classList.remove('hidden');
+      }
+      if (typeof Toast !== 'undefined') {
+        Toast.show('error', 'Auth Failed', err.message);
+      }
+      return false;
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+      if (submitText) submitText.textContent = '⚡ Authenticate Session';
+      if (spinner) spinner.classList.add('hidden');
+    }
+  },
+
+  async quickLogin(roleKey) {
+    const acc = DEMO_ACCOUNTS[roleKey];
+    if (!acc) return;
+
+    const emailInput = document.getElementById('authEmail');
+    const passInput = document.getElementById('authPassword');
+    if (emailInput) emailInput.value = acc.email;
+    if (passInput) passInput.value = acc.password;
+
+    return await Auth.login(acc.email, acc.password);
+  },
+
+  async checkSession() {
+    const token = Auth.getToken();
+    if (!token) {
+      return false;
+    }
+
+    try {
+      const res = await nativeFetch(`${API_BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(4000),
+      });
+
+      if (!res.ok) {
+        Auth.clearSession();
+        return false;
+      }
+
+      const data = await res.json();
+      Auth.setSession(token, data.user);
+      return true;
+    } catch (err) {
+      console.warn('Session verification fallback:', err.message);
+      const user = Auth.getUser();
+      if (user) {
+        Auth.updateIdentityUI(user);
+        return true;
+      }
+      return false;
+    }
+  },
+
+  initListeners() {
+    // 1-Click Quick Demo Role Cards
+    document.querySelectorAll('.demo-role-card').forEach((card) => {
+      card.addEventListener('click', (e) => {
+        e.preventDefault();
+        const role = card.dataset.role;
+        if (role) Auth.quickLogin(role);
+      });
+    });
+
+    // Manual Form Submission
+    const form = document.getElementById('authLoginForm');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('authEmail')?.value.trim();
+        const password = document.getElementById('authPassword')?.value;
+        if (email && password) {
+          Auth.login(email, password);
+        }
+      });
+    }
+
+    // Dismiss Button (Only shown when already logged in and switching roles)
+    const dismissBtn = document.getElementById('authDismissBtn');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => Auth.hideLoginOverlay());
+    }
+
+    // Topbar Switch Role Button
+    const switchBtn = document.getElementById('switchRoleBtn');
+    if (switchBtn) {
+      switchBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        Auth.openRoleSwitcher();
+      });
+    }
+
+    // Topbar Identity Pill Click
+    const topPill = document.getElementById('topbarIdentityPill');
+    if (topPill) {
+      topPill.addEventListener('click', () => Auth.openRoleSwitcher());
+    }
+
+    // Sidebar User Profile Click
+    const sideProfile = document.getElementById('sidebarUserProfile');
+    if (sideProfile) {
+      sideProfile.addEventListener('click', () => Auth.openRoleSwitcher());
+    }
+
+    // Click Outside Overlay to Dismiss (Only if already authenticated)
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay && Auth.getUser()) {
+          Auth.hideLoginOverlay();
+        }
+      });
+    }
+  },
+};
+
+// ── CENTRAL FETCH INTERCEPTOR (ATTACH JWT & HANDLE 401/403) ──
+const nativeFetch = window.fetch;
+window.fetch = async function (resource, config = {}) {
+  const url = typeof resource === 'string' ? resource : resource?.url || '';
+
+  // Intercept requests directed to our SAR Backend API
+  if (url.startsWith(API_BASE_URL)) {
+    config = config || {};
+    let headersObj = {};
+
+    if (config.headers instanceof Headers) {
+      config.headers.forEach((v, k) => { headersObj[k] = v; });
+    } else if (Array.isArray(config.headers)) {
+      config.headers.forEach(([k, v]) => { headersObj[k] = v; });
+    } else if (typeof config.headers === 'object' && config.headers !== null) {
+      headersObj = { ...config.headers };
+    }
+
+    const token = Auth.getToken();
+    if (token && !headersObj['Authorization'] && !headersObj['authorization']) {
+      headersObj['Authorization'] = `Bearer ${token}`;
+    }
+    config.headers = headersObj;
+
+    const response = await nativeFetch(resource, config);
+
+    // 401 Unauthorized: token expired or invalid
+    if (response.status === 401 && !url.includes('/auth/login')) {
+      console.warn('[AUTH] 401 Unauthorized intercepted on:', url);
+      if (typeof Toast !== 'undefined') {
+        Toast.show('error', 'Session Expired', 'Tactical session expired. Please re-authenticate.');
+      }
+      Auth.clearSession();
+    }
+    // 403 Forbidden: RBAC restriction
+    else if (response.status === 403) {
+      try {
+        const cloned = response.clone();
+        const errData = await cloned.json();
+        const reason = errData.detail || errData.message || 'Operation forbidden for your tactical role.';
+        if (typeof Toast !== 'undefined') {
+          Toast.show('warning', 'Clearance Restricted (403)', reason, 6000);
+        }
+      } catch (err) {
+        if (typeof Toast !== 'undefined') {
+          Toast.show('warning', 'Clearance Restricted (403)', 'Your role lacks tactical clearance for this operation.', 6000);
+        }
+      }
+    }
+
+    return response;
+  }
+
+  return nativeFetch(resource, config);
+};
+
+// ── AUTHENTICATION TOKEN HELPERS (BACKWARD COMPATIBLE) ──
+let currentAuthToken = Auth.getToken();
 
 async function ensureAuthToken() {
-  if (currentAuthToken) return currentAuthToken;
-  try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'commander@resq.in', password: 'password123' }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      currentAuthToken = data.token;
-      localStorage.setItem('sar_token', data.token);
-      localStorage.setItem('sar_user', JSON.stringify(data.user));
-    }
-  } catch (e) {
-    console.warn('Auto-auth notice:', e.message);
+  const token = Auth.getToken();
+  if (token) {
+    currentAuthToken = token;
+    return token;
   }
-  return currentAuthToken;
+  Auth.showLoginOverlay(false);
+  return null;
 }
 
 function getAuthHeaders(extraHeaders = {}) {
   const headers = { 'Content-Type': 'application/json', ...extraHeaders };
-  if (currentAuthToken) {
-    headers['Authorization'] = `Bearer ${currentAuthToken}`;
+  const token = Auth.getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
 }
@@ -346,8 +669,11 @@ async function fetchAllSARData() {
     return false;
   }
 
-  // Ensure active auth session for write operations
-  await ensureAuthToken();
+  // Ensure active auth session
+  const token = await ensureAuthToken();
+  if (!token) {
+    return false;
+  }
 
   const [incOk, teamsOk, zonesOk, resOk, fndOk] = await Promise.all([
     fetchIncidents(),

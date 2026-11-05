@@ -206,22 +206,37 @@ document.getElementById('notifBtn').addEventListener('click', () => {
 
 // ── INIT ──────────────────────────────────────────────
 (async function init() {
-    const apiOnline = await fetchAllSARData();
+  if (typeof Auth !== 'undefined' && typeof Auth.initListeners === 'function') {
+    Auth.initListeners();
+  }
 
-    updateBadges();
-    App.navigate('dashboard');
+  // Verify active tactical session
+  const isAuthenticated = typeof Auth !== 'undefined' ? await Auth.checkSession() : false;
 
-    if (apiOnline) {
-        Toast.show(
-            'success',
-            'Command Center Online',
-            'Live data synchronized from MongoDB.'
-        );
-    } else {
-        Toast.show(
-            'error',
-            'Database Connection Failed',
-            'Backend server not responding. Please run npm start in backend.'
-        );
+  if (!isAuthenticated) {
+    if (typeof Auth !== 'undefined') {
+      Auth.showLoginOverlay(false);
     }
+    return;
+  }
+
+  const apiOnline = await fetchAllSARData();
+
+  updateBadges();
+  App.navigate('dashboard');
+
+  if (apiOnline) {
+    const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+    Toast.show(
+      'success',
+      'Tactical Net Online',
+      `Live session active: ${user ? user.name : 'Operator'} [${user ? user.role : 'ACTIVE'}]`
+    );
+  } else {
+    Toast.show(
+      'error',
+      'Database Connection Failed',
+      'Backend server not responding. Please run npm start in backend.'
+    );
+  }
 })();

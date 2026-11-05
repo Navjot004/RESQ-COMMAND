@@ -160,6 +160,50 @@
     gap: 4px;
   }
 
+  /* Tactical Identity Pill on Mobile (<= 768px) */
+  .topbar-identity-pill {
+    padding: 3px 6px;
+    gap: 6px;
+  }
+  .identity-name {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .identity-status-label {
+    display: none;
+  }
+  .switch-role-btn span {
+    display: none;
+  }
+  .switch-role-btn {
+    padding: 4px 6px;
+  }
+
+  /* Tactical Auth Overlay on Mobile (<= 768px) */
+  .auth-modal-card {
+    padding: 20px 16px;
+    max-height: 94vh;
+    overflow-y: auto;
+  }
+  .demo-roles-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .auth-inputs-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .auth-header {
+    gap: 12px;
+  }
+  .auth-title {
+    font-size: 1rem;
+  }
+  .auth-subtitle {
+    font-size: 0.72rem;
+  }
+
   /* Page container */
   .page-container {
     height: calc(100vh - 58px);
@@ -396,6 +440,9 @@
   }
   .search-bar {
     display: none; /* Hide search bar on extra small screens */
+  }
+  .identity-name-row {
+    display: none;
   }
   .topbar-titles h1 {
     font-size: 0.88rem;
