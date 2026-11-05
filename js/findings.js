@@ -133,7 +133,7 @@ function openLogFindingModal() {
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Finding ID</label>
-        <input class="form-control" value="${SAR.nextId('FND',SAR.findings)}" readonly style="opacity:0.6" />
+        <input class="form-control font-mono" value="${SAR.nextId('FND',SAR.findings)}" readonly style="opacity:0.6" />
       </div>
       <div class="form-group">
         <label class="form-label">Type *</label>
@@ -163,20 +163,69 @@ function openLogFindingModal() {
       <label class="form-label">Associated Incident</label>
       <select class="form-control" id="fndIncident">${incidents}</select>
     </div>
+
+    <!-- ── Interactive Tactical Map Location Picker ── -->
+    <div class="form-group" style="margin-bottom: 12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <label class="form-label" style="margin:0; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Finding Location & Tactical Map Pin *
+        </label>
+        <span style="font-size:0.7rem; color:var(--text-muted)">Search or click map to auto-fill</span>
+      </div>
+
+      <div class="geo-picker-toolbar">
+        <div class="geo-search-box">
+          <svg class="geo-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="fndLocationSearch" class="geo-search-input" placeholder="Search place, landmark, village (e.g. Solang, Rohtang)..." autocomplete="off" />
+          <button type="button" id="fndClearSearchBtn" class="geo-btn-clear hidden" title="Clear">✕</button>
+        </div>
+        <button type="button" id="fndSearchBtn" class="btn btn-sm btn-primary geo-btn-action">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </button>
+        <button type="button" id="fndGpsBtn" class="btn btn-sm btn-secondary geo-btn-action" title="Acquire GPS Location">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+          </svg>
+          GPS
+        </button>
+      </div>
+
+      <!-- Dropdown for searched places -->
+      <div id="fndSearchResults" class="geo-search-dropdown hidden"></div>
+
+      <!-- Leaflet Tactical Mini-Map -->
+      <div class="geo-map-wrapper">
+        <div id="fndMiniMap" class="geo-mini-map"></div>
+        <div class="geo-map-crosshair-hint">
+          <span>👆 Click map or drag pin to auto-fill location & coordinates</span>
+          <span class="geo-coords-tag" id="fndCoordsTag">LAT: 32.24550 | LNG: 77.18730</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auto-populated location field -->
     <div class="form-group">
       <label class="form-label">Location Description *</label>
-      <input class="form-control" id="fndLocation" placeholder="e.g. Near waterfall, Zone Alpha Grid C-3" />
+      <input class="form-control" id="fndLocation" placeholder="Auto-filled from map (e.g. Near waterfall, Zone Alpha Grid C-3)" />
+      <div id="fndReverseGeocodeStatus" class="geo-status-indicator"></div>
     </div>
+
+    <!-- Auto-populated coordinate fields -->
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Latitude</label>
-        <input class="form-control" id="fndLat" type="number" step="0.0001" placeholder="32.xxxx" />
+        <input class="form-control font-mono" id="fndLat" type="number" step="0.00001" placeholder="32.xxxx" />
       </div>
       <div class="form-group">
         <label class="form-label">Longitude</label>
-        <input class="form-control" id="fndLng" type="number" step="0.0001" placeholder="77.xxxx" />
+        <input class="form-control font-mono" id="fndLng" type="number" step="0.00001" placeholder="77.xxxx" />
       </div>
     </div>
+
     <div class="form-group">
       <label class="form-label">Description *</label>
       <textarea class="form-control" id="fndDesc" placeholder="Detailed description of the finding, condition, observations…"></textarea>
@@ -185,7 +234,26 @@ function openLogFindingModal() {
       <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
       <button class="btn btn-primary" onclick="submitLogFinding()">Log Finding</button>
     </div>
-  `);
+  `, 'lg');
+
+  // Initialize interactive map & geocoding picker
+  if (typeof SARLocationPicker !== 'undefined') {
+    SARLocationPicker.init({
+      mapElementId: 'fndMiniMap',
+      locationInputId: 'fndLocation',
+      latInputId: 'fndLat',
+      lngInputId: 'fndLng',
+      searchInputId: 'fndLocationSearch',
+      searchBtnId: 'fndSearchBtn',
+      gpsBtnId: 'fndGpsBtn',
+      clearBtnId: 'fndClearSearchBtn',
+      resultsContainerId: 'fndSearchResults',
+      coordsTagId: 'fndCoordsTag',
+      statusIndicatorId: 'fndReverseGeocodeStatus',
+      initialLat: 32.2455,
+      initialLng: 77.1873,
+    });
+  }
 }
 
 async function submitLogFinding() {

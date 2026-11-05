@@ -16,12 +16,25 @@ setInterval(() => {
 
 // ── MODAL ─────────────────────────────────────────────
 const Modal = {
-  open(title, bodyHTML) {
+  open(title, bodyHTML, size = 'default') {
+    const box = document.getElementById('modalBox');
+    if (box) {
+      if (size === 'lg') {
+        box.classList.add('modal-box-lg');
+      } else {
+        box.classList.remove('modal-box-lg');
+      }
+    }
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').innerHTML = bodyHTML;
     document.getElementById('modalOverlay').classList.remove('hidden');
   },
   close() {
+    if (typeof SARLocationPicker !== 'undefined') {
+      SARLocationPicker.destroy();
+    }
+    const box = document.getElementById('modalBox');
+    if (box) box.classList.remove('modal-box-lg');
     document.getElementById('modalOverlay').classList.add('hidden');
     document.getElementById('modalBody').innerHTML = '';
   },

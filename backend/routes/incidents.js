@@ -62,7 +62,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ detail: 'Invalid priority. Must be LOW, MEDIUM, HIGH, or CRITICAL' });
     }
 
+    const count = await Incident.countDocuments();
+    const incId = req.body.incident_id || `INC-${String(count + 1).padStart(3, '0')}`;
+
     const incident = await Incident.create({
+      incident_id: incId,
       title: title.trim(),
       description: description || '',
       location: location.trim(),

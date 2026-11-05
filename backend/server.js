@@ -16,6 +16,7 @@ const teamsRoutes = require('./routes/teams');
 const zonesRoutes = require('./routes/zones');
 const resourcesRoutes = require('./routes/resources');
 const findingsRoutes = require('./routes/findings');
+const geocodeRoutes = require('./routes/geocode');
 
 const app = express();
 const server = http.createServer(app);
@@ -45,6 +46,9 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve frontend static files
+app.use(express.static(path.resolve(__dirname, '..')));
+
 // Root health & status endpoints
 app.get('/', (req, res) => {
   res.json({
@@ -70,6 +74,7 @@ app.use('/api/teams', teamsRoutes);
 app.use('/api/zones', zonesRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/findings', findingsRoutes);
+app.use('/api/geocode', geocodeRoutes);
 
 // Socket.IO event handling
 io.on('connection', (socket) => {

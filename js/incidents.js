@@ -103,7 +103,7 @@ function openCreateIncidentModal() {
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Incident ID</label>
-        <input class="form-control" id="incId" value="${SAR.nextId('INC', SAR.incidents)}" readonly style="opacity:0.6" />
+        <input class="form-control font-mono" id="incId" value="${SAR.nextId('INC', SAR.incidents)}" readonly style="opacity:0.6" />
       </div>
       <div class="form-group">
         <label class="form-label">Priority *</label>
@@ -117,29 +117,78 @@ function openCreateIncidentModal() {
     </div>
     <div class="form-group">
       <label class="form-label">Incident Title *</label>
-      <input class="form-control" id="incTitle" placeholder="e.g. Hiker Missing — Hampta Pass" />
+      <input class="form-control" id="incTitle" placeholder="e.g. Hiker Missing — Solang Glacial Valley" />
     </div>
+
+    <!-- ── Interactive Tactical Map Location Picker ── -->
+    <div class="form-group" style="margin-bottom: 12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <label class="form-label" style="margin:0; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Location & Tactical Map Selection *
+        </label>
+        <span style="font-size:0.7rem; color:var(--text-muted)">Search or click map to auto-fill</span>
+      </div>
+
+      <div class="geo-picker-toolbar">
+        <div class="geo-search-box">
+          <svg class="geo-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="incLocationSearch" class="geo-search-input" placeholder="Search place, valley, pass, town (e.g. Solang, Manali, Rohtang)..." autocomplete="off" />
+          <button type="button" id="incClearSearchBtn" class="geo-btn-clear hidden" title="Clear">✕</button>
+        </div>
+        <button type="button" id="incSearchBtn" class="btn btn-sm btn-primary geo-btn-action">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </button>
+        <button type="button" id="incGpsBtn" class="btn btn-sm btn-secondary geo-btn-action" title="Acquire GPS Location">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+          </svg>
+          GPS
+        </button>
+      </div>
+
+      <!-- Dropdown for searched places -->
+      <div id="incSearchResults" class="geo-search-dropdown hidden"></div>
+
+      <!-- Leaflet Tactical Mini-Map -->
+      <div class="geo-map-wrapper">
+        <div id="incMiniMap" class="geo-mini-map"></div>
+        <div class="geo-map-crosshair-hint">
+          <span>👆 Click map or drag pin to auto-fill location & coordinates</span>
+          <span class="geo-coords-tag" id="incCoordsTag">LAT: 32.24550 | LNG: 77.18730</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auto-populated location name field -->
     <div class="form-group">
-      <label class="form-label">Location *</label>
-      <input class="form-control" id="incLocation" placeholder="e.g. Hampta Pass, Kullu District" />
+      <label class="form-label">Resolved Location Name *</label>
+      <input class="form-control" id="incLocation" placeholder="Auto-filled from map (e.g. Solang Valley, Kullu District)" />
+      <div id="incReverseGeocodeStatus" class="geo-status-indicator"></div>
     </div>
+
+    <!-- Auto-populated latitude & longitude fields -->
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Latitude</label>
-        <input class="form-control" id="incLat" type="number" step="0.0001" placeholder="32.xxxx" />
+        <input class="form-control font-mono" id="incLat" type="number" step="0.00001" placeholder="32.xxxx" />
       </div>
       <div class="form-group">
         <label class="form-label">Longitude</label>
-        <input class="form-control" id="incLng" type="number" step="0.0001" placeholder="77.xxxx" />
+        <input class="form-control font-mono" id="incLng" type="number" step="0.00001" placeholder="77.xxxx" />
       </div>
     </div>
+
     <div class="form-group">
       <label class="form-label">Description *</label>
       <textarea class="form-control" id="incDesc" placeholder="Describe the incident, circumstances, and immediate actions taken…"></textarea>
     </div>
     <div class="form-group">
       <label class="form-label">Reported By</label>
-      <input class="form-control" id="incReporter" placeholder="e.g. HP Police HQ" />
+      <input class="form-control" id="incReporter" placeholder="e.g. HP Police HQ / Mountain Patrol" />
     </div>
     <div class="form-group">
       <label class="form-label">Assign Teams</label>
@@ -152,11 +201,31 @@ function openCreateIncidentModal() {
       <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
       <button class="btn btn-primary" onclick="submitCreateIncident()">Create Incident</button>
     </div>
-  `);
+  `, 'lg');
+
+  // Initialize interactive map & geocoding picker
+  if (typeof SARLocationPicker !== 'undefined') {
+    SARLocationPicker.init({
+      mapElementId: 'incMiniMap',
+      locationInputId: 'incLocation',
+      latInputId: 'incLat',
+      lngInputId: 'incLng',
+      searchInputId: 'incLocationSearch',
+      searchBtnId: 'incSearchBtn',
+      gpsBtnId: 'incGpsBtn',
+      clearBtnId: 'incClearSearchBtn',
+      resultsContainerId: 'incSearchResults',
+      coordsTagId: 'incCoordsTag',
+      statusIndicatorId: 'incReverseGeocodeStatus',
+      initialLat: 32.2455,
+      initialLng: 77.1873,
+    });
+  }
 }
 
 
 async function submitCreateIncident() {
+    const incId = document.getElementById('incId')?.value.trim();
     const title = document.getElementById('incTitle').value.trim();
     const location = document.getElementById('incLocation').value.trim();
     const priority = document.getElementById('incPriority').value;
@@ -182,12 +251,15 @@ async function submitCreateIncident() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                incident_id: incId,
                 title,
                 description: desc,
                 location,
                 latitude: lat,
                 longitude: lng,
-                priority: priority.toUpperCase()
+                priority: priority.toUpperCase(),
+                reported_by: reporter,
+                teams: teamsSel
             })
         });
 
