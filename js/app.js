@@ -181,13 +181,13 @@ document.getElementById('notifBtn').addEventListener('click', () => {
         Toast.show(
             'success',
             'Command Center Online',
-            'Live operational SAR data synchronized from database.'
+            'Live data synchronized from MongoDB.'
         );
     } else {
         Toast.show(
-            'info',
-            'Tactical Baseline Active',
-            'Operating on high-altitude SAR operational baseline data.'
+            'error',
+            'Database Connection Failed',
+            'Backend server not responding. Please run npm start in backend.'
         );
     }
 })();
