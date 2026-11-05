@@ -45,8 +45,18 @@ router.post('/', verifyToken, authorizeRoles('FIELD_LEADER', 'COORDINATOR', 'COM
 
     const serialized = finding.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
     if (req.app.get('io')) {
-      req.app.get('io').emit('finding:created', serialized);
+      req.app.get('io').emit('finding:created', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> Logged ${serialized.type}: <strong>${serialized.title}</strong> at ${serialized.location}`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: serialized.type === 'hazard' ? '#ef4444' : '#10b981',
+      });
     }
 
     return res.status(201).json({

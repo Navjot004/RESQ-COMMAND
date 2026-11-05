@@ -75,6 +75,51 @@ const Toast = {
 const App = {
   currentPage: 'dashboard',
 
+  getDefaultPageForRole(role) {
+    switch (role) {
+      case 'LOGISTICS':
+        return 'resources';
+      case 'FIELD_LEADER':
+        return 'teams';
+      case 'COORDINATOR':
+      case 'COMMANDER':
+      default:
+        return 'dashboard';
+    }
+  },
+
+  applyRoleNavigation() {
+    const user = typeof SAR !== 'undefined' ? SAR.currentUser : null;
+    const role = user?.role || 'COMMANDER';
+
+    // Reset role-specific nav classes & tags
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.remove('nav-primary-role', 'nav-secondary-role');
+      item.querySelectorAll('.nav-role-tag').forEach(tag => tag.remove());
+    });
+
+    const navDashboard = document.getElementById('nav-dashboard');
+    const navMap = document.getElementById('nav-map');
+    const navIncidents = document.getElementById('nav-incidents');
+    const navTeams = document.getElementById('nav-teams');
+    const navResources = document.getElementById('nav-resources');
+
+    if (role === 'LOGISTICS') {
+      navResources?.classList.add('nav-primary-role');
+      navMap?.classList.add('nav-secondary-role');
+      navResources?.insertAdjacentHTML('beforeend', '<span class="nav-role-tag role-tag-logistics">SUPPLY HUB</span>');
+    } else if (role === 'FIELD_LEADER') {
+      navTeams?.classList.add('nav-primary-role');
+      navMap?.classList.add('nav-secondary-role');
+      navTeams?.insertAdjacentHTML('beforeend', '<span class="nav-role-tag role-tag-leader">MY SQUAD</span>');
+    } else if (role === 'COORDINATOR') {
+      navMap?.classList.add('nav-primary-role');
+      navIncidents?.insertAdjacentHTML('beforeend', '<span class="nav-role-tag role-tag-coordinator">OPS</span>');
+    } else {
+      navDashboard?.classList.add('nav-primary-role');
+    }
+  },
+
   navigate(page) {
     // Hide all pages
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -88,6 +133,9 @@ const App = {
     // Activate nav item
     const navEl = document.getElementById(`nav-${page}`);
     if (navEl) navEl.classList.add('active');
+
+    // Apply role-based sidebar cues
+    this.applyRoleNavigation();
 
     // Update topbar
     const titles = {
@@ -223,7 +271,9 @@ document.getElementById('notifBtn').addEventListener('click', () => {
   const apiOnline = await fetchAllSARData();
 
   updateBadges();
-  App.navigate('dashboard');
+  const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;
+  const targetPage = App.getDefaultPageForRole(user?.role);
+  App.navigate(targetPage);
 
   if (apiOnline) {
     const user = typeof Auth !== 'undefined' ? Auth.getUser() : null;

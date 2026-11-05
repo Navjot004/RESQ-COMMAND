@@ -44,8 +44,18 @@ router.post('/', verifyToken, async (req, res) => {
 
     const serialized = resource.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
     if (req.app.get('io')) {
-      req.app.get('io').emit('resource:created', serialized);
+      req.app.get('io').emit('resource:created', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> Requested <strong>${serialized.qty} ${serialized.unit} ${serialized.item}</strong>`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: '#f59e0b',
+      });
     }
 
     return res.status(201).json({
@@ -79,8 +89,18 @@ router.patch('/:id', verifyToken, authorizeRoles('COMMANDER', 'LOGISTICS'), asyn
 
     const serialized = resource.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
     if (req.app.get('io')) {
-      req.app.get('io').emit('resource:updated', serialized);
+      req.app.get('io').emit('resource:updated', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> ${serialized.status.toUpperCase()}: <strong>${serialized.qty} ${serialized.unit} ${serialized.item}</strong>`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: serialized.status === 'delivered' ? '#10b981' : serialized.status === 'dispatched' ? '#8b5cf6' : '#3b82f6',
+      });
     }
 
     return res.json({

@@ -8,10 +8,32 @@ function renderTeams() {
   const root = document.getElementById('teams-root');
   if (!root) return;
 
-  let filtered = SAR.teams;
+  let filtered = [...SAR.teams];
   if (teamFilter !== 'all') {
-    filtered = SAR.teams.filter(t => t.status === teamFilter);
+    filtered = filtered.filter(t => t.status === teamFilter);
   }
+
+  // Highlight Field Leader's assigned squad at the top of the list
+  const myTeamId = (typeof SAR !== 'undefined' && SAR.currentUser?.assigned_team) || 'T-01';
+  if (typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER') && myTeamId) {
+    filtered.sort((a, b) => {
+      if (a.id === myTeamId) return -1;
+      if (b.id === myTeamId) return 1;
+      return 0;
+    });
+  }
+
+  const canCommission = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'COORDINATOR');
+  const actionButton = canCommission ? `
+    <button class="btn btn-primary" onclick="openCreateTeamModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Team
+    </button>
+  ` : `
+    <div class="role-clearance-pill">
+      🔒 Squad Commission Restricted (Commander / Coord Only)
+    </div>
+  `;
 
   root.innerHTML = `
     <div class="page-header">
@@ -19,10 +41,7 @@ function renderTeams() {
         <h2>Team Management</h2>
         <p>${SAR.teams.length} teams · ${SAR.teams.filter(t=>t.status==='deployed').length} deployed</p>
       </div>
-      <button class="btn btn-primary" onclick="openCreateTeamModal()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New Team
-      </button>
+      ${actionButton}
     </div>
 
     <div class="filter-bar">
@@ -50,8 +69,50 @@ function renderTeamCard(team) {
   const statusColor = statusColors[team.status] || '#6b7280';
   const radioComms = team.contact || `VHF 155.${(team.id.replace(/\D/g,'') || '16')}0 MHz`;
 
+  const myTeamId = (typeof SAR !== 'undefined' && SAR.currentUser?.assigned_team) || 'T-01';
+  const isLeader = typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER');
+  const isMySquad = isLeader && team.id === myTeamId;
+  const canManageAll = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'COORDINATOR');
+
+  let footerControls = '';
+  if (isMySquad) {
+    footerControls = `
+      <button class="btn btn-sm btn-primary" onclick="sendRadioCheckIn('${team.id}')" title="Broadcast GPS & Heartbeat to HQ">
+        📡 Radio Check-in
+      </button>
+      <button class="btn btn-sm btn-secondary" onclick="cycleTeamStatus('${team.id}')" title="Cycle Status (${team.status})">
+        Status: ${team.status.toUpperCase()} ⟳
+      </button>
+      <button class="btn btn-sm btn-secondary" onclick="openTeamDetail('${team.id}')">Roster</button>
+    `;
+  } else if (isLeader) {
+    footerControls = `
+      <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openTeamDetail('${team.id}')">Roster & Gear</button>
+      <span class="read-only-badge" title="Field Leaders can only command their assigned squad">🔒 Squad Locked</span>
+    `;
+  } else if (canManageAll) {
+    footerControls = `
+      <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openTeamDetail('${team.id}')">Roster & Gear</button>
+      <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openAssignZoneModal('${team.id}')">Assign Sector</button>
+      <button class="btn-icon" onclick="cycleTeamStatus('${team.id}')" title="Cycle Status (${team.status})">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
+    `;
+  } else {
+    footerControls = `
+      <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openTeamDetail('${team.id}')">Gear Roster</button>
+      <span class="read-only-badge">📦 Supply View</span>
+    `;
+  }
+
   return `
-    <div class="team-card">
+    <div class="team-card ${isMySquad ? 'team-card-my-squad' : ''}">
+      ${isMySquad ? `
+        <div class="my-squad-banner">
+          <span>⭐ MY ASSIGNED SQUAD (ALPHA)</span>
+          <span>CALL: ${SAR.currentUser?.callsign || 'T-01-LEAD'}</span>
+        </div>
+      ` : ''}
       <div class="team-card-top">
         <div class="team-avatar" style="border: 1px solid var(--border); border-left: 3px solid ${team.color}; background: var(--bg-elevated); color: ${team.color}; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">
           ${team.id}
@@ -103,11 +164,7 @@ function renderTeamCard(team) {
       </div>
 
       <div class="team-card-footer">
-        <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openTeamDetail('${team.id}')">Roster & Gear</button>
-        <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openAssignZoneModal('${team.id}')">Assign Sector</button>
-        <button class="btn-icon" onclick="cycleTeamStatus('${team.id}')" title="Cycle Status (${team.status})">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        </button>
+        ${footerControls}
       </div>
     </div>
   `;
@@ -386,12 +443,63 @@ function submitAssignZone(teamId) {
   Toast.show('success', 'Zone Assigned', newZone ? `${team.name} → ${newZone}` : `${team.name} unassigned`);
 }
 
-function cycleTeamStatus(id) {
+async function cycleTeamStatus(id) {
   const team = SAR.getTeam(id);
   if (!team) return;
-  const flow = ['standby','deployed','returning','off-duty'];
+  const flow = ['standby', 'deployed', 'returning', 'off-duty'];
   const cur  = flow.indexOf(team.status);
-  team.status = flow[(cur + 1) % flow.length];
-  renderTeams();
-  Toast.show('info', 'Status Changed', `${team.name} → ${team.status}`);
+  const newStatus = flow[(cur + 1) % flow.length];
+
+  try {
+    const targetId = team._dbId || id;
+    const res = await fetch(`${API_BASE_URL}/teams/${targetId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to update squad status');
+    }
+
+    team.status = newStatus;
+    renderTeams();
+    if (typeof updateBadges === 'function') updateBadges();
+    Toast.show('info', 'Status Changed', `${team.name} → ${newStatus.toUpperCase()}`);
+  } catch (err) {
+    Toast.show('error', 'Status Update Failed', err.message);
+  }
+}
+
+async function sendRadioCheckIn(teamId) {
+  const team = SAR.getTeam(teamId);
+  if (!team) return;
+
+  try {
+    const targetId = team._dbId || team.id;
+    const res = await fetch(`${API_BASE_URL}/teams/${targetId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: team.status }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Radio telemetry transmission failed');
+    }
+
+    SAR.activityLog.unshift({
+      id: 'act-radio-' + Date.now(),
+      type: 'success',
+      text: `<strong>📻 Radio Ping</strong>: Squad ${team.id} (${team.name}) VHF 155.16 MHz verified at Base Receiver`,
+      time: 'just now',
+      color: '#10b981',
+    });
+
+    Toast.show('success', 'Radio Check-in Confirmed', `Squad ${team.id} VHF signal 5/5. Tactical command acknowledged.`);
+    renderTeams();
+  } catch (err) {
+    Toast.show('error', 'Radio Ping Failed', err.message);
+  }
 }

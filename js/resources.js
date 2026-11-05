@@ -70,13 +70,30 @@ function miniStatCard(icon, label, value, color) {
 function renderResourceItem(r) {
   const team = SAR.getTeam(r.team);
   const inc  = SAR.getIncident(r.incident);
-  const statusActions = {
-    'pending':    `<button class="btn btn-sm btn-success" onclick="updateResourceStatus('${r.id}','approved')">Approve</button><button class="btn btn-sm btn-danger" onclick="updateResourceStatus('${r.id}','rejected')">Reject</button>`,
-    'approved':   `<button class="btn btn-sm btn-secondary" onclick="updateResourceStatus('${r.id}','dispatched')">Dispatch</button>`,
-    'dispatched': `<button class="btn btn-sm btn-success" onclick="updateResourceStatus('${r.id}','delivered')">Mark Delivered</button>`,
-    'delivered':  `<span style="color:var(--green);font-size:0.78rem">✓ Completed</span>`,
-    'rejected':   `<span style="color:var(--red);font-size:0.78rem">✗ Rejected</span>`,
-  };
+
+  const canApprove = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'LOGISTICS');
+
+  let actionButtons = '';
+  if (canApprove) {
+    const statusActions = {
+      'pending':    `<button class="btn btn-sm btn-success" onclick="updateResourceStatus('${r.id}','approved')">Approve</button><button class="btn btn-sm btn-danger" onclick="updateResourceStatus('${r.id}','rejected')">Reject</button>`,
+      'approved':   `<button class="btn btn-sm btn-primary" onclick="updateResourceStatus('${r.id}','dispatched')">Dispatch 🚚</button>`,
+      'dispatched': `<button class="btn btn-sm btn-success" onclick="updateResourceStatus('${r.id}','delivered')">Mark Delivered 📦</button>`,
+      'delivered':  `<span style="color:var(--green);font-size:0.78rem;font-weight:600">✓ Delivered</span>`,
+      'rejected':   `<span style="color:var(--red);font-size:0.78rem">✗ Rejected</span>`,
+    };
+    actionButtons = statusActions[r.status] || '';
+  } else {
+    // Restricted for Coordinator & Field Leader (approval cycle locked to Commander & Logistics)
+    const lockedIndicators = {
+      'pending':    `<span class="resource-lock-badge">🔒 Awaiting Logistics</span>`,
+      'approved':   `<span class="badge badge-approved">Approved (Queue)</span>`,
+      'dispatched': `<span class="badge badge-dispatched">🚚 In Transit</span>`,
+      'delivered':  `<span class="badge badge-delivered">📦 Delivered</span>`,
+      'rejected':   `<span class="badge badge-rejected">✗ Rejected</span>`,
+    };
+    actionButtons = lockedIndicators[r.status] || '';
+  }
 
   return `
     <div class="resource-item" id="res-${r.id}">
@@ -100,7 +117,7 @@ function renderResourceItem(r) {
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">
         <span class="badge badge-${r.status}">${r.status}</span>
         <div class="resource-actions">
-          ${statusActions[r.status] || ''}
+          ${actionButtons}
         </div>
       </div>
     </div>
@@ -112,20 +129,46 @@ function setResourceFilter(f) {
   renderResources();
 }
 
-function updateResourceStatus(id, newStatus) {
-  const r = SAR.resources.find(x=>x.id===id);
+async function updateResourceStatus(id, newStatus) {
+  const r = SAR.resources.find(x => x.id === id);
   if (!r) return;
-  r.status = newStatus;
-  SAR.activityLog.unshift({ type:'info', text:`<strong>${r.id}</strong> "${r.item}" status → <strong>${newStatus}</strong>`, time:'just now', color:'#8b5cf6' });
-  renderResources();
-  updateBadges();
-  const msgs = { approved:'approved ✓', rejected:'rejected ✗', dispatched:'dispatched 🚚', delivered:'delivered 📦' };
-  Toast.show('success', 'Request Updated', `${r.item} ${msgs[newStatus]||newStatus}`);
+
+  try {
+    const targetId = r._dbId || id;
+    const res = await fetch(`${API_BASE_URL}/resources/${targetId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to update resource request');
+    }
+
+    r.status = newStatus;
+    SAR.activityLog.unshift({
+      id: 'act-res-' + Date.now(),
+      type: 'info',
+      text: `<strong>${r.id}</strong> "${r.item}" status → <strong>${newStatus.toUpperCase()}</strong>`,
+      time: 'just now',
+      color: '#8b5cf6',
+    });
+
+    renderResources();
+    updateBadges();
+
+    const msgs = { approved: 'approved ✓', rejected: 'rejected ✗', dispatched: 'dispatched 🚚', delivered: 'delivered 📦' };
+    Toast.show('success', 'Request Updated', `${r.item} ${msgs[newStatus] || newStatus}`);
+  } catch (err) {
+    Toast.show('error', 'Update Failed', err.message);
+  }
 }
 
 function openCreateResourceModal() {
-  const incidents = SAR.incidents.map(i=>`<option value="${i.id}">${i.id} — ${i.title.substring(0,30)}</option>`).join('');
-  const teams     = SAR.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+  const myTeam = (typeof SAR !== 'undefined' && SAR.currentUser?.assigned_team) || '';
+  const incidents = SAR.incidents.map(i => `<option value="${i.id}">${i.id} — ${i.title.substring(0, 30)}</option>`).join('');
+  const teams     = SAR.teams.map(t => `<option value="${t.id}" ${t.id === myTeam ? 'selected' : ''}>${t.name}</option>`).join('');
 
   Modal.open('📦 New Resource Request', `
     <div class="form-row">

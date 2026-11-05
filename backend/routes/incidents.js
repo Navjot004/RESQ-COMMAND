@@ -83,8 +83,18 @@ router.post('/', verifyToken, authorizeRoles('COMMANDER'), async (req, res) => {
 
     const serialized = incident.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
     if (req.app.get('io')) {
-      req.app.get('io').emit('incident:created', serialized);
+      req.app.get('io').emit('incident:created', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> Declared ${serialized.priority} incident: <strong>${serialized.title}</strong> at ${serialized.location}`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: serialized.priority === 'CRITICAL' ? '#ef4444' : '#ea580c',
+      });
     }
 
     return res.status(201).json({
@@ -140,8 +150,18 @@ router.patch('/:id', verifyToken, authorizeRoles('COMMANDER', 'COORDINATOR'), as
 
     const serialized = incident.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
     if (req.app.get('io')) {
-      req.app.get('io').emit('incident:updated', serialized);
+      req.app.get('io').emit('incident:updated', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> Updated incident <strong>${serialized.id}</strong> status → <strong>${serialized.status}</strong>`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: '#0ea5e9',
+      });
     }
 
     return res.json({

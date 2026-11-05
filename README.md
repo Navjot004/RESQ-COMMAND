@@ -8,19 +8,24 @@
 1. [Project Overview & Problem Statement](#-project-overview--problem-statement)
 2. [Real Data vs. Simulated Data (The Data Reality)](#-real-data-vs-simulated-data-the-data-reality)
 3. [Architecture & Technology Stack](#-architecture--technology-stack)
-4. [Deep-Dive: How Every Page Works](#-deep-dive-how-every-page-works)
+4. [Role-Based Access Control (RBAC) Architecture](#-role-based-access-control-rbac-architecture)
+5. [Tactical Roles & Permissions Matrix](#-tactical-roles--permissions-matrix)
+6. [Demo Credentials & 1-Click Role Switcher](#-demo-credentials--1-click-role-switcher)
+7. [Real-Time Socket.IO Tactical Audit Feed](#-real-time-socketio-tactical-audit-feed)
+8. [Deep-Dive: How Every Page Works](#-deep-dive-how-every-page-works)
    - [1. Operations Dashboard](#1-operations-dashboard-pagedashboard)
    - [2. Tactical Search Map (GIS)](#2-tactical-search-map-pagemap)
    - [3. Incident Management & Map Picker](#3-incident-management-pageincidents)
    - [4. Teams & Squad Management (How Teams Work)](#4-teams--squad-management-pageteams)
    - [5. Resource Logistics & Supply Chain](#5-resource-logistics-pageresources)
    - [6. Field Findings & Clues](#6-field-findings--clues-pagefindings)
-5. [Tactical Map Location Picker Module](#-tactical-map-location-picker-module)
-6. [Mobile & Tablet Responsive Design System](#-mobile--tablet-responsive-design-system)
-7. [API Specification & Backend Routes](#-api-specification--backend-routes)
-8. [Database Schema & Models](#-database-schema--models)
-9. [Project Directory Structure](#-project-directory-structure)
-10. [Setup & Running Instructions](#-setup--running-instructions)
+9. [Tactical Map Location Picker Module](#-tactical-map-location-picker-module)
+10. [Mobile & Tablet Responsive Design System](#-mobile--tablet-responsive-design-system)
+11. [API Specification & Backend Routes](#-api-specification--backend-routes)
+12. [Database Schema & Models](#-database-schema--models)
+13. [Project Directory Structure](#-project-directory-structure)
+14. [Setup & Running Instructions](#-setup--running-instructions)
+15. [Summary for Evaluators & Examiners](#-summary-for-evaluators--examiners)
 
 ---
 
@@ -67,13 +72,16 @@ A critical requirement of this project is **zero hardcoding**:
    │   - HTML5, Modular Vanilla ES6+ JavaScript, CSS3 variables   │
    │   - Leaflet.js 1.9.4 (GIS Engine) & Leaflet.draw (Polygons)  │
    │   - Responsive Design (Mobile / Tablet / Desktop)            │
+   │   - Tactical Role-Based UI Adaptations & Identity Pill       │
    └──────────────────────────────┬───────────────────────────────┘
-                                  │  REST API (JSON) + Socket.IO
+                                  │  REST API (JSON + Bearer JWT)
+                                  │  + WebSockets (Socket.IO)
                                   ▼
    ┌──────────────────────────────────────────────────────────────┐
    │                 BACKEND SERVER (Node.js & Express)           │
    │   - Express.js REST API with CORS enabled                    │
-   │   - Real-time WebSockets via Socket.IO                       │
+   │   - JWT Authentication & RBAC Middleware (verifyToken/Roles) │
+   │   - Real-time Socket.IO Live Tactical Audit Broadcaster      │
    │   - Reverse Geocoding & Search Proxy (/api/geocode)          │
    │   - Mongoose ODM Layer                                       │
    └──────────────────────────────┬───────────────────────────────┘
@@ -81,16 +89,117 @@ A critical requirement of this project is **zero hardcoding**:
                                   ▼
    ┌──────────────────────────────────────────────────────────────┐
    │                 DATABASE (MongoDB Atlas Cloud)               │
-   │   - Collections: Incidents, Teams, Zones, Resources, Findings│
+   │   - Collections: Users, Incidents, Teams, Zones,             │
+   │                  Resources, Findings                         │
    └──────────────────────────────────────────────────────────────┘
 ```
 
-- **Frontend Core**: Vanilla JavaScript (ES6+), HTML5, CSS3.
+- **Frontend Core**: Vanilla JavaScript (ES6+), HTML5, CSS3 variables.
 - **Mapping & GIS**: Leaflet.js v1.9.4, Leaflet.draw v1.0.4, Esri ArcGIS Tile Servers.
 - **Backend Runtime**: Node.js (v24.x) & Express.js.
 - **Database**: MongoDB Atlas via Mongoose ODM.
-- **Real-Time Engine**: Socket.IO for streaming field telemetry and alerts.
+- **Authentication & Security**: JSON Web Tokens (JWT) signed with HMAC-SHA256, bcryptjs password hashing, role-based route guards.
+- **Real-Time Engine**: Socket.IO for live tactical activity audits and domain event distribution.
 - **Geocoding Services**: OpenStreetMap Nominatim with server-side in-memory caching.
+
+---
+
+## 🔐 Role-Based Access Control (RBAC) Architecture
+
+During high-intensity multi-agency disaster operations, strict chain-of-command integrity is critical:
+- An unauthorized operator must **never** be able to delete active incident records or arbitrarily reassign rescue squads.
+- Field leaders must have immediate, friction-free authority to report survivor clues and update sector progress without waiting for HQ bottlenecks.
+- Supply officers require exclusive custody over equipment approvals and dispatch lifecycles.
+
+To solve this, **RESQ-COMMAND** enforces a defense-grade **Role-Based Access Control (RBAC)** architecture across both the backend REST endpoints and the interactive frontend client.
+
+### Backend Security Enforcement
+1. **JWT Authentication (`backend/middleware/auth.js`)**:
+   - `verifyToken`: Extracts and cryptographically verifies the `Authorization: Bearer <token>` header. Decodes user identity, checks token expiration (8-hour operational shift window), and attaches the full `req.user` profile.
+   - `authorizeRoles(...allowedRoles)`: A higher-order route guard. If the authenticated role is not in the allowed list, the request is immediately rejected with HTTP `403 Forbidden` and a structured diagnostic response:
+     ```json
+     {
+       "error": "Forbidden",
+       "message": "Access denied: Required role [COMMANDER], your role is [FIELD_LEADER]"
+     }
+     ```
+2. **Password Security**:
+   - All passwords are encrypted using `bcryptjs` with salted hashing before persistence in MongoDB.
+3. **Role Scoping at Route Level**:
+   - **Incidents:** Only `COMMANDER` can create or delete incidents. `COMMANDER` and `COORDINATOR` can update status/priority.
+   - **Zones / Sectors:** Only `COMMANDER` and `COORDINATOR` can draw new sectors or assign teams. `FIELD_LEADER` can update search progress (0–100%) and mark sectors completed.
+   - **Teams:** Only `COMMANDER` and `COORDINATOR` can commission squads or modify assignments. `FIELD_LEADER` can broadcast radio check-ins and update operational status for their assigned squad.
+   - **Resources:** Any authenticated user can submit a supply request. Only `COMMANDER` and `LOGISTICS` can approve, dispatch, or deliver items.
+   - **Findings:** `FIELD_LEADER`, `COORDINATOR`, and `COMMANDER` can log real-time clues and survivor locations.
+
+### Dynamic Frontend Adaptations
+1. **Automatic Bearer Token Injection**:
+   - The central data client (`js/data.js`) stores the signed JWT in `localStorage` upon login and automatically injects `Authorization: Bearer <token>` into all `fetch()` calls via `SAR.authFetch()`.
+   - If an unauthorized action is attempted, a tactical toast alert displays the exact clearance limitation.
+2. **Role-Aware UI Rendering (`js/app.js`, `js/dashboard.js`, `js/map.js`, `js/teams.js`, `js/resources.js`)**:
+   - Navigation links, buttons, drawing toolbars, and action forms dynamically hide, show, or lock depending on `SAR.currentUser.role`.
+
+---
+
+## 🛡️ Tactical Roles & Permissions Matrix
+
+| Tactical Role | Badge & Callsign | Page Clearance Scope | Creation Permissions | Operational / Update Permissions | Approval & Admin Authority | Restricted / Locked Actions |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **COMMANDER** | 🎖️ `COMMAND-01`<br>`#e74c3c` | Full Access (All 6 Pages)<br>*Dashboard, Map, Incidents, Teams, Resources, Findings* | • New Incidents<br>• Search Sectors<br>• Commission Squads<br>• Log Findings<br>• Supply Requests | • Update incident status/priority<br>• Assign squads to sectors<br>• Radio safety check-ins<br>• Delete any incident | • Full logistics approval pipeline (`PENDING` ➔ `APPROVED` ➔ `DISPATCHED` ➔ `DELIVERED`)<br>• Incident deletion authority | **None** (Supreme Operational Authority) |
+| **COORDINATOR** | 📡 `OPS-COORD-01`<br>`#3498db` | Operations Clearance (5 Pages)<br>*Dashboard, Map, Incidents, Teams, Findings* | • Search Sectors (Polygons)<br>• Assign Squads<br>• Log Field Findings<br>• Supply Requests | • Update incident status/priority<br>• Reassign squads & sectors<br>• Update team status | • Sector tactical management<br>• Field coordination | ✕ Cannot delete incidents<br>✕ Cannot approve or dispatch logistical resources |
+| **FIELD_LEADER** | 🥾 `T-01-LEAD`<br>`#2ecc71` | Tactical Field Clearance (3 Pages)<br>*Map, Assigned Team, Field Findings* | • Log Field Findings & Clues<br>• Emergency Supply Requests | • Update assigned sector progress (0–100%)<br>• Broadcast squad radio check-in<br>• Update squad operational status | • In-situ sector progress validation<br>• Squad safety verification | ✕ Cannot create/delete incidents<br>✕ Cannot draw new search sectors<br>✕ Non-assigned squads are read-only<br>✕ Cannot approve logistical supplies |
+| **LOGISTICS** | 📦 `SUPPLY-BASE`<br>`#f39c12` | Supply Chain Clearance (2 Pages)<br>*Resources & Tactical Map* | • Log Supply Requests<br>• Equipment Procurement | • Route resources to incidents & sectors<br>• Monitor map delivery waypoints | • **Exclusive Logistics Custody**: Approve (`APPROVED`), dispatch (`DISPATCHED`), and mark delivered (`DELIVERED`) | ✕ Cannot create/delete incidents<br>✕ Cannot draw search sectors<br>✕ Cannot alter team deployments |
+
+---
+
+## 🎯 Demo Credentials & 1-Click Role Switcher
+
+To allow academic evaluators and examiners to test the complete multi-role system immediately without manual sign-ups or database re-seeding, 4 pre-configured accounts are seeded directly into MongoDB Atlas:
+
+| Persona | Email | Password | Callsign | Assigned Unit | Primary Operational Role |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 🎖️ **Incident Commander** | `commander@resq.in` | `password123` | `COMMAND-01` | HQ Command Post | Strategic command, incident authoring, full approvals |
+| 📡 **Zone Coordinator** | `coordinator@resq.in` | `password123` | `OPS-COORD-01` | Operations Centre | Sector designation, squad routing, spatial coordination |
+| 🥾 **Field Team Leader** | `alpha.lead@resq.in` | `password123` | `T-01-LEAD` | Alpha Mountain Rescue (T-01) | Sector search execution, radio check-ins, finding clues |
+| 📦 **Logistics Officer** | `logistics@resq.in` | `password123` | `SUPPLY-BASE` | Base Logistics Depot | Supply chain verification, equipment dispatch, delivery tracking |
+
+### Evaluator Features for Rapid Testing
+1. **Defense-Grade Tactical Login Screen (`#authOverlay`)**:
+   - When opened without an active session, a sleek dark tactical portal blocks access.
+   - Evaluators can enter custom credentials **OR** click any of the **4 Quick Demo Role Login Buttons** to log in instantaneously with one click.
+2. **Topbar Tactical Identity Pill (`.user-identity-pill`)**:
+   - The persistent top navigation bar displays the active user's Name, Callsign, and a color-coded Role Badge.
+   - Includes a **`[ 🔄 Switch Role ]`** button that opens a tactical overlay. Evaluators can transition between **Commander**, **Field Leader**, **Coordinator**, and **Logistics** instantly without page reload, observing real-time UI adaptations.
+3. **Tactical Role Mandate Banner (`.role-mandate-banner`)**:
+   - Displayed prominently at the top of the Operations Dashboard.
+   - Highlights the operator's active clearance scope, color theme, and explicit permission badges (`✓ Allowed` vs. `✕ Locked`).
+
+---
+
+## ⚡ Real-Time Socket.IO Tactical Audit Feed
+
+RESQ-COMMAND integrates an event-driven **Socket.IO** telemetry feed that streams real-time field updates across all connected command stations and mobile units:
+
+### Event Architecture
+Whenever an authorized operator performs an operational change, the backend route broadcasts an `activity:log` event containing structured actor metadata:
+```javascript
+// Backend Broadcast Structure
+io.emit('activity:log', {
+  text: `<strong>[${req.user.role} | ${req.user.callsign}]</strong> Created critical incident: Rohtang Pass Avalanche`,
+  badge: 'CRITICAL',
+  badgeClass: 'tag-critical',
+  time: new Date().toISOString()
+});
+```
+
+### Live Tactical Feed Updates
+- **Incident Created / Status Updated:** Broadcasts priority elevation or containment.
+- **Search Sector Progress Slider:** Emits live percentage updates (e.g., `[FIELD_LEADER | T-01-LEAD] Updated Sector Alpha progress to 75%`).
+- **Radio Safety Check-in:** Logs live VHF frequency check-ins to confirm rescuer health and comms integrity.
+- **Field Finding / Clue Discovered:** Broadcasts GPS-tagged evidence or survivor sightings.
+- **Logistics Status Transition:** Streams real-time equipment approval and dispatch confirmations.
+
+All broadcasts immediately prepend to the **Live Activity Feed** on `#page-dashboard` with glowing radar pulse indicators.
 
 ---
 
@@ -264,55 +373,62 @@ The application is completely responsive across phones, tablets, and desktops:
 
 ## 📡 API Specification & Backend Routes
 
-The backend server is an Express.js application listening on port `8000`:
+The backend server is an Express.js application listening on port `8000`. Protected endpoints require an `Authorization: Bearer <token>` header containing a valid signed JWT:
+
+### Authentication & Identity
+| Method | Endpoint | Clearance | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | **Public** | Authenticate with `{ email, password }`. Returns `{ token, user }` with 8-hour shift validity. |
+| `GET` | `/api/auth/me` | **Authenticated** | Returns current active user profile, callsign, role, and assigned team. |
 
 ### System & Health
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/` | API status and version info |
-| `GET` | `/api/health` | Health check (reports MongoDB Atlas connection state & Node.js version) |
+| Method | Endpoint | Clearance | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/` | **Public** | API status and tactical platform version info |
+| `GET` | `/api/health` | **Public** | Health check (reports MongoDB Atlas connection state & Node.js version) |
 
 ### Geocoding & GIS Resolution
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/geocode/search?q={query}` | Searches place names via OpenStreetMap Nominatim with memory cache |
-| `GET` | `/api/geocode/reverse?lat={lat}&lng={lng}` | Reverse-geocodes coordinates into road, village, and state names |
+| Method | Endpoint | Clearance | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/geocode/search?q={query}` | **Public** | Searches place names via OpenStreetMap Nominatim with memory cache |
+| `GET` | `/api/geocode/reverse?lat={lat}&lng={lng}` | **Public** | Reverse-geocodes coordinates into road, village, and state names |
 
 ### Incidents
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/incidents/` | List all incidents (sorted newest first) |
-| `GET` | `/api/incidents/:id` | Get single incident details |
-| `POST` | `/api/incidents/` | Create new incident `{ title, description, location, latitude, longitude, priority, reported_by, teams }` |
-| `PATCH`| `/api/incidents/:id` | Update incident status or priority |
-| `DELETE`| `/api/incidents/:id` | Delete incident |
+| Method | Endpoint | Clearance | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/incidents/` | **Authenticated** | List all incidents (sorted newest first) |
+| `GET` | `/api/incidents/:id` | **Authenticated** | Get single incident details with linked teams, zones, and findings |
+| `POST` | `/api/incidents/` | `COMMANDER` | Create new incident `{ title, description, location, latitude, longitude, priority, reported_by, teams }` |
+| `PATCH`| `/api/incidents/:id` | `COMMANDER`, `COORDINATOR` | Update incident status or priority |
+| `DELETE`| `/api/incidents/:id` | `COMMANDER` | Delete incident from active database |
 
 ### Teams / Squads
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/teams/` | List all rescue squads |
-| `POST` | `/api/teams/` | Commission new squad `{ name, leader, members, specialization, contact, zone, color }` |
-| `PATCH`| `/api/teams/:id` | Update squad status or assigned zone |
+| Method | Endpoint | Clearance | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/teams/` | **Authenticated** | List all rescue squads with personnel, comms, and GPS positions |
+| `POST` | `/api/teams/` | `COMMANDER`, `COORDINATOR` | Commission new squad `{ name, leader, members, specialization, contact, zone, color }` |
+| `PATCH`| `/api/teams/:id` | `COMMANDER`, `COORDINATOR` *(or `FIELD_LEADER` for assigned squad)* | Update squad status or assigned zone |
+| `POST` | `/api/teams/:id/checkin` | `COMMANDER`, `COORDINATOR`, `FIELD_LEADER` | Trigger tactical radio safety check-in on squad's VHF frequency |
 
 ### Search Zones / Sectors
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/zones/` | List all designated search zones |
-| `POST` | `/api/zones/` | Create new zone polygon `{ zone_id, name, coordinates, priority, team, status }` |
-| `PATCH`| `/api/zones/:id` | Update zone search progress percentage or assigned team |
+| Method | Endpoint | Clearance | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/zones/` | **Authenticated** | List all designated search zones and polygon perimeters |
+| `POST` | `/api/zones/` | `COMMANDER`, `COORDINATOR` | Designate new zone polygon `{ zone_id, name, coordinates, priority, team, status }` |
+| `PATCH`| `/api/zones/:id` | `COMMANDER`, `COORDINATOR` *(or `FIELD_LEADER` for search progress)* | Update search progress percentage (`progress: 0-100%`) or assigned team |
 
 ### Resources & Logistics
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/resources/` | List all resources and logistical requests |
-| `POST` | `/api/resources/` | Log new resource request `{ name, type, quantity, priority, incident, zone }` |
-| `PATCH`| `/api/resources/:id`| Update request status (`pending`, `approved`, `dispatched`, `delivered`) |
+| Method | Endpoint | Clearance | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/resources/` | **Authenticated** | List all logistical equipment and supply requests |
+| `POST` | `/api/resources/` | **Any Authenticated** | Log new resource request `{ name, type, quantity, priority, incident, zone }` |
+| `PATCH`| `/api/resources/:id`| `COMMANDER`, `LOGISTICS` | Transition request lifecycle status (`pending`, `approved`, `dispatched`, `delivered`) |
 
 ### Field Findings
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/findings/` | List all field findings and clues |
-| `POST` | `/api/findings/` | Record new finding `{ type, title, location, lat, lng, zone, team, incident }` |
+| Method | Endpoint | Clearance | Description |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/findings/` | **Authenticated** | List all field findings, clues, and survivor reports |
+| `POST` | `/api/findings/` | `COMMANDER`, `COORDINATOR`, `FIELD_LEADER` | Record new field clue/finding `{ type, title, location, lat, lng, zone, team, incident }` |
 
 ---
 
@@ -320,11 +436,19 @@ The backend server is an Express.js application listening on port `8000`:
 
 All models are defined via Mongoose in [`backend/models/`](backend/models/):
 
-1. **Incident (`Incident.js`):** `incident_id`, `title`, `description`, `location`, `latitude`, `longitude`, `priority` (LOW, MEDIUM, HIGH, CRITICAL), `status` (ACTIVE, CONTAINED, RESOLVED), `reported_by`, `teams`, `zones`, `findings`, `created_at`.
-2. **Team (`Team.js`):** `team_id`, `name`, `leader`, `members`, `status` (deployed, standby, returning, off-duty), `zone`, `color`, `specialization`, `contact`, `equipment`, `lat`, `lng`.
-3. **Zone (`Zone.js`):** `zone_id`, `name`, `coordinates` (array of lat/lng points forming polygon), `priority`, `status` (assigned, in-progress, completed, pending), `progress` (0–100%), `team`, `center` (centroid lat/lng), `terrain`.
-4. **Resource (`Resource.js`):** `resource_id`, `name`, `type` (medical, vehicles, aviation, personnel, comms), `quantity`, `status` (pending, approved, dispatched, delivered), `priority`, `incident`, `zone`, `location`, `requested_at`.
-5. **Finding (`Finding.js`):** `finding_id`, `type` (person-found, clue, hazard, evidence), `title`, `location`, `lat`, `lng`, `zone`, `team`, `incident`, `description`, `status`, `reportedAt`.
+1. **User (`User.js`):**
+   - Fields: `name`, `email` (unique, lowercase), `password` (hashed with `bcryptjs`), `role` (enum: `COMMANDER`, `COORDINATOR`, `FIELD_LEADER`, `LOGISTICS`), `callsign`, `assigned_team` (references `team_id`), `created_at`.
+   - Security: Pre-save hook automatically salts and hashes updated passwords. Instance method `comparePassword(candidatePassword)` securely verifies credentials.
+2. **Incident (`Incident.js`):**
+   - Fields: `incident_id`, `title`, `description`, `location`, `latitude`, `longitude`, `priority` (LOW, MEDIUM, HIGH, CRITICAL), `status` (ACTIVE, CONTAINED, RESOLVED), `reported_by`, `teams`, `zones`, `findings`, `created_at`.
+3. **Team (`Team.js`):**
+   - Fields: `team_id`, `name`, `leader`, `members` (crew breakdown with sub-roles), `status` (deployed, standby, returning, off-duty), `zone`, `color`, `specialization`, `contact` (VHF callsign & channel), `last_checkin`, `equipment`, `lat`, `lng`.
+4. **Zone (`Zone.js`):**
+   - Fields: `zone_id`, `name`, `coordinates` (array of lat/lng pairs forming GIS polygon), `priority`, `status` (assigned, in-progress, completed, pending), `progress` (integer 0–100%), `team`, `center` (centroid lat/lng), `terrain`.
+5. **Resource (`Resource.js`):**
+   - Fields: `resource_id`, `name`, `type` (medical, vehicles, aviation, personnel, comms), `quantity`, `status` (pending, approved, dispatched, delivered), `priority`, `incident`, `zone`, `location`, `requested_at`.
+6. **Finding (`Finding.js`):**
+   - Fields: `finding_id`, `type` (person-found, clue, hazard, evidence), `title`, `location`, `lat`, `lng`, `zone`, `team`, `incident`, `description`, `status`, `reportedAt`.
 
 ---
 
@@ -332,20 +456,20 @@ All models are defined via Mongoose in [`backend/models/`](backend/models/):
 
 ```
 RESQ-COMMAND/
-├── index.html                  # Main Application Single-Page Interface
-├── README.md                   # Complete Architectural Documentation
+├── index.html                  # Main Application Single-Page Interface with Auth Overlay
+├── README.md                   # Complete Architectural Documentation & Matrix
 │
 ├── css/
-│   ├── main.css                # Base Layout, Dark Command Theme & Component Styling
+│   ├── main.css                # Base Layout, Dark Command Theme & Tactical Role Styling
 │   ├── modals.css              # Glassmorphism Modals & Location Picker Pin Styles
 │   ├── animations.css          # Tactical Radar Pulses, Glowing Pins & Fade-ins
 │   └── responsive.css          # Mobile / Tablet Breakpoints & Drawer Styles
 │
 ├── js/
-│   ├── app.js                  # Application Router, Modals Manager & Mobile Drawer
-│   ├── data.js                 # Dynamic State Orchestrator & REST Data Fetchers
-│   ├── dashboard.js            # Operations Dashboard & Situational Awareness Radar
-│   ├── map.js                  # Leaflet GIS Engine, Polygon Drawer & Squad Trackers
+│   ├── app.js                  # Application Router, RBAC Navigation Guard & Modals Manager
+│   ├── data.js                 # Dynamic State Orchestrator, JWT Auth & Socket.IO Listener
+│   ├── dashboard.js            # Operations Dashboard, Role Mandate Banner & Live Radar Feed
+│   ├── map.js                  # Leaflet GIS Engine, Polygon Drawer & Role Map Toolbar
 │   ├── location-picker.js      # Tactical Map Geocoding & Reverse-Geocoding Module
 │   ├── incidents.js            # Incident Table, Filtering & Incident Creation Modal
 │   ├── teams.js                # Squad Cards, Crew Roles, Comms & Radio Check-in
@@ -355,25 +479,27 @@ RESQ-COMMAND/
 └── backend/
     ├── server.js               # Express Server, Static Serving & Socket.IO Engine
     ├── package.json            # Node.js Dependencies & NPM Scripts
-    ├── seed.js                 # Realistic Himalayan Disaster Baseline Seeder
-    ├── .env                    # MongoDB Atlas URI & Port Configuration
+    ├── seed.js                 # Realistic Himalayan Disaster & Demo RBAC Accounts Seeder
+    ├── .env                    # MongoDB Atlas URI, JWT Secret & Port Configuration
+    ├── .env.example            # Environment Variable Template for Production / Review
     ├── config/
     │   └── db.js               # Mongoose MongoDB Atlas Connection Pool
     ├── middleware/
-    │   └── auth.js             # JWT Security Middleware
+    │   └── auth.js             # JWT Security Middleware (verifyToken & authorizeRoles)
     ├── models/
+    │   ├── User.js             # User & RBAC Mongoose Model (bcryptjs)
     │   ├── Incident.js         # Incident Mongoose Model
     │   ├── Team.js             # Team / Squad Mongoose Model
     │   ├── Zone.js             # Search Sector Polygon Mongoose Model
     │   ├── Resource.js         # Logistics Mongoose Model
     │   └── Finding.js          # Field Finding Mongoose Model
     └── routes/
-        ├── auth.js             # Authentication Endpoints
-        ├── incidents.js        # Incident REST Endpoints
-        ├── teams.js            # Team REST Endpoints
-        ├── zones.js            # Zone REST Endpoints
-        ├── resources.js        # Resource REST Endpoints
-        ├── findings.js         # Finding REST Endpoints
+        ├── auth.js             # Authentication Endpoints (Login & Current User)
+        ├── incidents.js        # Incident REST Endpoints with RBAC Guards
+        ├── teams.js            # Team REST Endpoints with RBAC Guards
+        ├── zones.js            # Zone REST Endpoints with RBAC Guards
+        ├── resources.js        # Resource REST Endpoints with RBAC Guards
+        ├── findings.js         # Finding REST Endpoints with RBAC Guards
         └── geocode.js          # Live Geocoding & Reverse-Geocoding Proxy
 ```
 
@@ -394,13 +520,15 @@ RESQ-COMMAND/
    ```bash
    npm install
    ```
-3. Ensure `.env` is present with your MongoDB Atlas connection string:
+3. Ensure `.env` is present with your MongoDB Atlas connection string and JWT secret:
    ```env
+   PORT=8000
    MONGODB_URL=mongodb+srv://<username>:<password>@sar-platform.luvgars.mongodb.net/?retryWrites=true&w=majority
    MONGODB_DATABASE=sar_platform
-   PORT=8000
+   JWT_SECRET=super_secret_sar_defense_grade_jwt_key_2026
+   JWT_EXPIRES_IN=8h
    ```
-4. Seed the database with the realistic disaster scenario (optional / first time):
+4. Seed the database with the realistic disaster scenario and 4 demo accounts (optional / first time):
    ```bash
    node seed.js
    ```
@@ -414,16 +542,26 @@ RESQ-COMMAND/
    ✅ MongoDB Connected: ac-nadgbrm-shard-00-01.luvgars.mongodb.net (DB: sar_platform)
    ```
 
-### 3. Frontend Launch
+### 3. Frontend Launch & Role Testing
 You can access the frontend in either of two ways:
 - **Directly via the Node backend:** Open `http://127.0.0.1:8000/index.html` in your browser.
 - **Via VS Code Live Server:** Right-click `index.html` and choose **"Open with Live Server"** (`http://127.0.0.1:5500`).
+
+#### 1-Click Demo Evaluation:
+1. When the Tactical Login Screen appears, click any of the 4 demo role buttons:
+   - 🎖️ **Incident Commander** (`commander@resq.in`)
+   - 📡 **Zone Coordinator** (`coordinator@resq.in`)
+   - 🥾 **Field Team Leader** (`alpha.lead@resq.in`)
+   - 📦 **Logistics Officer** (`logistics@resq.in`)
+2. To test different roles during evaluation, click the **`[ 🔄 Switch Role ]`** button in the topbar header to seamlessly swap personas and inspect permission enforcement.
 
 ---
 
 ## 🏆 Summary for Evaluators & Examiners
 
-1. **Not a mock UI**: Every incident, squad, finding, and zone is saved and retrieved from live **MongoDB Atlas**.
-2. **Real-world geospatial intelligence**: Users do not have to memorize latitude and longitude; typing a place or clicking the map resolves exact GPS coordinates and location names dynamically via OpenStreetMap.
-3. **Professional disaster response standard**: Teams possess tactical callsigns, VHF radio frequencies, crew role breakdowns, and radio safety check-in accountability.
-4. **Device agnostic**: Works on desktop monitors in command centers and mobile smartphones in the field with a dedicated off-canvas drawer and responsive touch layout.
+1. **Not a mock UI**: Every user, incident, squad, finding, and zone is saved and retrieved from live **MongoDB Atlas**.
+2. **Defense-Grade RBAC**: Enforces strict operational clearance with signed JWTs, protecting critical incident and dispatch workflows.
+3. **Real-world geospatial intelligence**: Users do not have to memorize latitude and longitude; typing a place or clicking the map resolves exact GPS coordinates and location names dynamically via OpenStreetMap.
+4. **Live Telemetry & Audit Broadcaster**: Socket.IO streams instantaneous, role-tagged operational audits (`[ROLE | CALLSIGN]`) across all active command stations.
+5. **Professional disaster response standard**: Teams possess tactical callsigns, VHF radio frequencies, crew role breakdowns, and radio safety check-in accountability.
+6. **Device agnostic**: Works on desktop monitors in command centers and mobile smartphones in the field with a dedicated off-canvas drawer and responsive touch layout.

@@ -210,6 +210,27 @@
     overflow-y: auto;
   }
 
+  /* Role Briefing Card & Map Controls on Mobile */
+  .role-briefing-card {
+    margin: 0 12px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 14px;
+  }
+  .briefing-actions {
+    width: 100%;
+    margin-top: 8px;
+  }
+  .briefing-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .map-field-controls {
+    flex-wrap: wrap;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
   /* Page Headers & Controls */
   .page-header {
     flex-direction: column;

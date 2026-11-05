@@ -26,15 +26,24 @@ function renderFindings() {
         <h2>Findings & Reports</h2>
         <p>${SAR.findings.length} total findings logged</p>
       </div>
-      <div style="display:flex;gap:10px">
+      <div style="display:flex;gap:10px;align-items:center">
         <button class="btn btn-secondary" onclick="exportReport()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export Report
         </button>
-        <button class="btn btn-primary" onclick="openLogFindingModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Log Finding
-        </button>
+        ${(() => {
+          const canLogFinding = typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER', 'COORDINATOR', 'COMMANDER');
+          return canLogFinding ? `
+            <button class="btn btn-primary" onclick="openLogFindingModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Log Finding
+            </button>
+          ` : `
+            <div class="role-clearance-pill">
+              🔒 Findings Logging Restricted (Field/Coord/Cmd Only)
+            </div>
+          `;
+        })()}
       </div>
     </div>
 
@@ -125,9 +134,12 @@ function setFindingFilter(f) {
 }
 
 function openLogFindingModal() {
-  const teams = SAR.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
-  const zones = SAR.zones.map(z=>`<option value="${z.id}">${z.name}</option>`).join('');
-  const incidents = SAR.incidents.map(i=>`<option value="${i.id}">${i.id} — ${i.title.substring(0,30)}</option>`).join('');
+  const myTeamId = (typeof SAR !== 'undefined' && SAR.currentUser?.assigned_team) || '';
+  const myZone = (typeof SAR !== 'undefined' && SAR.getMyZone()) || null;
+
+  const teams     = SAR.teams.map(t => `<option value="${t.id}" ${t.id === myTeamId ? 'selected' : ''}>${t.name}</option>`).join('');
+  const zones     = SAR.zones.map(z => `<option value="${z.id}" ${myZone && myZone.id === z.id ? 'selected' : ''}>${z.name}</option>`).join('');
+  const incidents = SAR.incidents.map(i => `<option value="${i.id}">${i.id} — ${i.title.substring(0, 30)}</option>`).join('');
 
   Modal.open('🔍 Log New Finding', `
     <div class="form-row">

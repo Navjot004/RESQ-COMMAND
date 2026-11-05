@@ -20,7 +20,12 @@ function renderDashboard() {
   };
   const totalInc = SAR.incidents.length;
 
+  const role = typeof SAR !== 'undefined' && SAR.currentUser?.role || 'COMMANDER';
+
   root.innerHTML = `
+    <!-- Role Operational Briefing Banner -->
+    ${renderRoleBriefingBanner(role)}
+
     <!-- Stats Row -->
     <div class="dashboard-grid">
       <div class="stats-row">
@@ -43,32 +48,17 @@ function renderDashboard() {
         </div>
         <div class="card-body">
           <div class="activity-feed" id="activityFeed">
-            ${SAR.incidents
-             .slice()
-             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-             .slice(0, 8)
-             .map(i => {
-              const colors = {
-                critical: '#ef4444',
-                high: '#ea580c',
-                medium: '#d97706',
-                low: '#0284c7'
-              };
-
-        return `
-            <div class="activity-item">
-                <div class="activity-dot" style="background:${colors[i.priority] || 'var(--accent)'}"></div>
-                <div class="activity-content">
-                    <div class="activity-text">
-                        <strong>${i.id}</strong> ${i.title} — ${i.location}
-                    </div>
-                    <div class="activity-time">
-                        ${SAR.formatTime(i.createdAt)}
+            ${SAR.activityLog
+             .slice(0, 10)
+             .map(a => `
+                <div class="activity-item">
+                    <div class="activity-dot" style="background:${a.color || 'var(--accent)'}"></div>
+                    <div class="activity-content">
+                        <div class="activity-text">${a.text}</div>
+                        <div class="activity-time">${a.time}</div>
                     </div>
                 </div>
-            </div>
-        `;
-    }).join('')}
+            `).join('')}
           </div>
         </div>
       </div>
@@ -231,18 +221,37 @@ function teamStatusCard(label, count, color) {
   `;
 }
 
-// Live feed simulation
+// Live feed tactical simulation
 let dashFeedTimer = null;
 const liveMessages = [
-  { text: '<strong>Golf Recon</strong> drone deployed over Parvati River', color: '#06b6d4' },
-  { text: '<strong>INC-001</strong> Zone Alpha progress updated to 70%', color: '#3b82f6' },
-  { text: '<strong>Hotel Reserve</strong> placed on standby alert', color: '#f59e0b' },
-  { text: '<strong>RES-005</strong> Thermal drone request forwarded to command', color: '#f59e0b' },
-  { text: '<strong>FND-006</strong> Hiker helicopter evacuation confirmed', color: '#10b981' },
-  { text: '<strong>Bravo Unit</strong> reporting movement in Zone Bravo grid B-2', color: '#10b981' },
-  { text: '<strong>Weather Alert:</strong> High wind warning for Rohtang Pass sector', color: '#ef4444' },
+  { text: '<span class="activity-actor-tag actor-coordinator">[COORDINATOR | OPS-COORD-01]</span> Golf Recon drone grid sweep initiated over Parvati River', color: '#06b6d4' },
+  { text: '<span class="activity-actor-tag actor-leader">[FIELD_LEADER | T-01-LEAD]</span> Sector Zone 1 sweep progress updated to 75% [IN-PROGRESS]', color: '#10b981' },
+  { text: '<span class="activity-actor-tag actor-logistics">[LOGISTICS | SUPPLY-BASE]</span> Dispatched 2x Thermal Drones to Solang Base Depot', color: '#f59e0b' },
+  { text: '<span class="activity-actor-tag actor-commander">[COMMANDER | COMMAND-01]</span> Authorized helicopter MEDEVAC sortie for INC-002', color: '#ef4444' },
+  { text: '<span class="activity-actor-tag actor-leader">[FIELD_LEADER | T-01-LEAD]</span> VHF Radio Ping (155.16 MHz): Signal strength 5/5 at receiver', color: '#10b981' },
+  { text: '<span class="activity-actor-tag actor-coordinator">[COORDINATOR | OPS-COORD-01]</span> Reassigned Echo Unit to Rohtang Pass Ridge Sector', color: '#3b82f6' },
+  { text: '<span class="activity-actor-tag actor-leader">[FIELD_LEADER | T-01-LEAD]</span> Logged clue: High-altitude backpack found near grid B-4', color: '#10b981' },
 ];
 let liveIdx = 0;
+
+function appendActivityFeedItem(entry) {
+  const feed = document.getElementById('activityFeed');
+  if (!feed) return;
+
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.innerHTML = `
+    <div class="activity-dot" style="background:${entry.color || 'var(--accent)'}"></div>
+    <div class="activity-content">
+      <div class="activity-text">${entry.text}</div>
+      <div class="activity-time">🕐 just now</div>
+    </div>
+  `;
+  feed.insertBefore(item, feed.firstChild);
+  if (feed.children.length > 15) {
+    feed.removeChild(feed.lastChild);
+  }
+}
 
 function startLiveFeed() {
   stopLiveFeed();
@@ -263,10 +272,10 @@ function startLiveFeed() {
       </div>
     `;
     feed.insertBefore(item, feed.firstChild);
-    if (feed.children.length > 10) feed.removeChild(feed.lastChild);
+    if (feed.children.length > 15) feed.removeChild(feed.lastChild);
     SAR.activityLog.unshift({ type:'info', text: msg.text, time:'just now', color: msg.color });
-    if (SAR.activityLog.length > 20) SAR.activityLog.pop();
-  }, 6000);
+    if (SAR.activityLog.length > 30) SAR.activityLog.pop();
+  }, 7000);
 }
 
 function stopLiveFeed() {
@@ -285,4 +294,147 @@ function zoneSVG() {
 }
 function boxSVG() {
   return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
+}
+
+// ── TACTICAL ROLE MANDATE BANNER ──────────────────────
+function renderRoleBriefingBanner(role) {
+  const user = typeof SAR !== 'undefined' ? SAR.currentUser : null;
+  const name = user?.name || 'Operator';
+  const callsign = user?.callsign || 'HQ';
+
+  if (role === 'LOGISTICS') {
+    const pendingCount = SAR.resources.filter(r => r.status === 'pending').length;
+    return `
+      <div class="role-briefing-card briefing-logistics">
+        <div class="role-briefing-card-top">
+          <div class="briefing-left">
+            <div class="briefing-icon">📦</div>
+            <div>
+              <div class="briefing-title">
+                <span>SUPPLY CHAIN & LOGISTICAL CLEARANCE MANDATE</span>
+                <span class="role-badge role-badge-logistics">LOGISTICS • ${callsign}</span>
+              </div>
+              <div class="briefing-desc">
+                Authenticated Officer: <strong>${name}</strong> · Direct authority over supply chains, depot dispatches, and equipment fulfillment.
+              </div>
+            </div>
+          </div>
+          <div class="briefing-actions">
+            <button class="btn btn-sm btn-primary" onclick="App.navigate('resources')">Review Supply Queue (${pendingCount})</button>
+            <button class="btn btn-sm btn-secondary" onclick="App.navigate('map')">Delivery Waypoints</button>
+          </div>
+        </div>
+        <div class="mandate-perms-row">
+          <span class="mandate-label">CLEARANCE SCOPE:</span>
+          <span class="perm-pill perm-allowed">✓ Approve Supplies</span>
+          <span class="perm-pill perm-allowed">✓ Dispatch Gear & Kits</span>
+          <span class="perm-pill perm-allowed">✓ Confirm Deliveries</span>
+          <span class="perm-pill perm-locked">✕ Declare Incidents</span>
+          <span class="perm-pill perm-locked">✕ Designate Sectors</span>
+        </div>
+      </div>
+    `;
+  } else if (role === 'FIELD_LEADER') {
+    const myTeam = SAR.getMyTeam();
+    const myZone = SAR.getMyZone();
+    const progress = myZone ? (myZone.progress || 0) : 0;
+    return `
+      <div class="role-briefing-card briefing-leader">
+        <div class="role-briefing-card-top">
+          <div class="briefing-left">
+            <div class="briefing-icon">🥾</div>
+            <div>
+              <div class="briefing-title">
+                <span>FIELD RECONNAISSANCE & SQUAD COMMAND MANDATE</span>
+                <span class="role-badge role-badge-leader">FIELD LEADER • ${callsign}</span>
+              </div>
+              <div class="briefing-desc">
+                Squad Commander: <strong>${name}</strong> (${myTeam ? myTeam.name : 'Alpha Platoon'}) · Sector: <strong style="color:var(--text-primary)">${myZone ? myZone.name : 'Standby'}</strong> (${progress}% swept) · VHF 155.16 MHz
+              </div>
+            </div>
+          </div>
+          <div class="briefing-actions">
+            <button class="btn btn-sm btn-primary" onclick="App.navigate('teams')">Squad Roster & Comms</button>
+            <button class="btn btn-sm btn-secondary" onclick="App.navigate('map')">Sector Progress (${progress}%)</button>
+          </div>
+        </div>
+        <div class="mandate-perms-row">
+          <span class="mandate-label">CLEARANCE SCOPE:</span>
+          <span class="perm-pill perm-allowed">✓ VHF Radio Check-in</span>
+          <span class="perm-pill perm-allowed">✓ Sector Sweep (0-100%)</span>
+          <span class="perm-pill perm-allowed">✓ Log Clues & Findings</span>
+          <span class="perm-pill perm-allowed">✓ Request Resources</span>
+          <span class="perm-pill perm-locked">✕ Declare Incidents</span>
+          <span class="perm-pill perm-locked">✕ Commission Squads</span>
+        </div>
+      </div>
+    `;
+  } else if (role === 'COORDINATOR') {
+    const totalZones = SAR.zones.length;
+    const deployedTeams = SAR.teams.filter(t => t.status === 'deployed').length;
+    return `
+      <div class="role-briefing-card briefing-coordinator">
+        <div class="role-briefing-card-top">
+          <div class="briefing-left">
+            <div class="briefing-icon">📡</div>
+            <div>
+              <div class="briefing-title">
+                <span>TACTICAL OPERATIONS COORDINATION MANDATE</span>
+                <span class="role-badge role-badge-coordinator">COORDINATOR • ${callsign}</span>
+              </div>
+              <div class="briefing-desc">
+                Operations Coordinator: <strong>${name}</strong> · Sector designation, squad grid assignment, and mission triage clearance active.
+              </div>
+            </div>
+          </div>
+          <div class="briefing-actions">
+            <button class="btn btn-sm btn-primary" onclick="App.navigate('map')">Designate Sectors</button>
+            <button class="btn btn-sm btn-secondary" onclick="App.navigate('teams')">Assign Squads</button>
+          </div>
+        </div>
+        <div class="mandate-perms-row">
+          <span class="mandate-label">CLEARANCE SCOPE:</span>
+          <span class="perm-pill perm-allowed">✓ Draw Search Sectors</span>
+          <span class="perm-pill perm-allowed">✓ Assign Platoons</span>
+          <span class="perm-pill perm-allowed">✓ Triage Status Updates</span>
+          <span class="perm-pill perm-allowed">✓ Commission Teams</span>
+          <span class="perm-pill perm-locked">✕ Purge/Delete Incidents</span>
+          <span class="perm-pill perm-locked">✕ Approve Supplies</span>
+        </div>
+      </div>
+    `;
+  } else {
+    // Incident Commander
+    const activeInc = SAR.incidents.filter(i => i.status === 'active').length;
+    return `
+      <div class="role-briefing-card briefing-commander">
+        <div class="role-briefing-card-top">
+          <div class="briefing-left">
+            <div class="briefing-icon">🎖️</div>
+            <div>
+              <div class="briefing-title">
+                <span>FULL COMMAND & CONTROL MANDATE</span>
+                <span class="role-badge role-badge-commander">COMMANDER • ${callsign}</span>
+              </div>
+              <div class="briefing-desc">
+                Incident Commander: <strong>${name}</strong> · Unrestricted executive authority across all 6 SAR sub-systems. ${activeInc} active emergency incidents.
+              </div>
+            </div>
+          </div>
+          <div class="briefing-actions">
+            <button class="btn btn-sm btn-primary" onclick="App.navigate('incidents')">Declare Incident</button>
+            <button class="btn btn-sm btn-secondary" onclick="App.navigate('map')">Search Map</button>
+          </div>
+        </div>
+        <div class="mandate-perms-row">
+          <span class="mandate-label">CLEARANCE SCOPE:</span>
+          <span class="perm-pill perm-allowed">✓ Declare Emergency Incidents</span>
+          <span class="perm-pill perm-allowed">✓ Terminate Operations</span>
+          <span class="perm-pill perm-allowed">✓ Commission Squads</span>
+          <span class="perm-pill perm-allowed">✓ Approve Air/Ground Logistics</span>
+          <span class="perm-pill perm-allowed">✓ Unrestricted Command Access</span>
+        </div>
+      </div>
+    `;
+  }
 }

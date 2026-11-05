@@ -46,8 +46,18 @@ router.post('/', verifyToken, authorizeRoles('COMMANDER', 'COORDINATOR'), async 
 
     const serialized = team.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
     if (req.app.get('io')) {
-      req.app.get('io').emit('team:created', serialized);
+      req.app.get('io').emit('team:created', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> Commissioned squad: <strong>${serialized.name}</strong> (${serialized.id})`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: '#2563eb',
+      });
     }
 
     return res.status(201).json({
@@ -119,8 +129,22 @@ router.patch('/:id', verifyToken, async (req, res) => {
 
     const serialized = team.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
+    const actionDesc = req.user.role === 'FIELD_LEADER'
+      ? `Broadcasted VHF radio check-in for <strong>${serialized.name}</strong> [${serialized.status.toUpperCase()}]`
+      : `Updated squad <strong>${serialized.name}</strong> (${serialized.id}) status → <strong>${serialized.status.toUpperCase()}</strong>`;
+
     if (req.app.get('io')) {
-      req.app.get('io').emit('team:updated', serialized);
+      req.app.get('io').emit('team:updated', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> ${actionDesc}`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: '#10b981',
+      });
     }
 
     return res.json({

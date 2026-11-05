@@ -27,6 +27,34 @@ const SAR = {
     '#64748B', // Tactical Slate (Hotel)
   ],
 
+  // ── ROLE & USER HELPERS ────────────────────────────
+  get currentUser() {
+    return (typeof Auth !== 'undefined') ? Auth.getUser() : null;
+  },
+  set currentUser(u) {
+    if (typeof Auth !== 'undefined' && u) {
+      Auth.setSession(Auth.getToken(), u);
+    }
+  },
+  hasRole(...roles) {
+    const u = SAR.currentUser;
+    return !!(u && roles.includes(u.role));
+  },
+  isCommander() { return SAR.hasRole('COMMANDER'); },
+  isCoordinator() { return SAR.hasRole('COORDINATOR'); },
+  isFieldLeader() { return SAR.hasRole('FIELD_LEADER'); },
+  isLogistics() { return SAR.hasRole('LOGISTICS'); },
+  getMyTeam() {
+    const u = SAR.currentUser;
+    if (!u || !u.assigned_team) return null;
+    return SAR.getTeam(u.assigned_team);
+  },
+  getMyZone() {
+    const t = SAR.getMyTeam();
+    if (!t || !t.zone) return null;
+    return SAR.getZone(t.zone);
+  },
+
   // ── HELPERS & FORMATTERS ───────────────────────────
   getPriorityClass(p) {
     return `badge-${(p || 'medium').toLowerCase()}`;
@@ -105,26 +133,46 @@ const SAR = {
 function refreshDynamicActivityLog() {
   const logs = [];
 
-  // Add latest findings from MongoDB
-  SAR.findings.slice(0, 4).forEach((f, idx) => {
+  // Add latest findings from MongoDB with Field Leader Actor tags
+  SAR.findings.slice(0, 3).forEach((f, idx) => {
     logs.push({
       id: `act-f-${idx}`,
       type: f.type === 'hazard' ? 'error' : 'success',
-      text: `<strong>${f.title}</strong> reported at ${f.location}`,
+      text: `<span class="activity-actor-tag actor-leader">[FIELD_LEADER | T-01-LEAD]</span> Logged ${f.type.toUpperCase()}: <strong>${f.title}</strong> at ${f.location}`,
       time: SAR.formatTime(f.reportedAt),
       color: f.type === 'hazard' ? '#EF4444' : '#10B981',
     });
   });
 
-  // Add latest incident status from MongoDB
-  SAR.incidents.slice(0, 4).forEach((inc, idx) => {
+  // Add latest incident status from MongoDB with Commander Actor tags
+  SAR.incidents.slice(0, 3).forEach((inc, idx) => {
     logs.push({
       id: `act-i-${idx}`,
       type: inc.priority === 'critical' ? 'error' : 'info',
-      text: `<strong>${inc.id}</strong>: ${inc.title} [${inc.status.toUpperCase()}]`,
+      text: `<span class="activity-actor-tag actor-commander">[COMMANDER | COMMAND-01]</span> Declared ${inc.priority.toUpperCase()} incident: <strong>${inc.id}</strong> (${inc.title})`,
       time: SAR.formatTime(inc.createdAt),
-      color: inc.priority === 'critical' ? '#EF4444' : '#0EA5E9',
+      color: inc.priority === 'critical' ? '#EF4444' : '#EA580C',
     });
+  });
+
+  // Add latest resource requests with Logistics Actor tags
+  SAR.resources.slice(0, 2).forEach((res, idx) => {
+    logs.push({
+      id: `act-r-${idx}`,
+      type: 'info',
+      text: `<span class="activity-actor-tag actor-logistics">[LOGISTICS | SUPPLY-BASE]</span> ${res.status.toUpperCase()} supply order: <strong>${res.qty} ${res.unit} ${res.item}</strong>`,
+      time: SAR.formatTime(res.requestedAt),
+      color: res.status === 'delivered' ? '#10B981' : '#F59E0B',
+    });
+  });
+
+  // Add radio telemetry check-in
+  logs.push({
+    id: `act-radio-init`,
+    type: 'success',
+    text: `<span class="activity-actor-tag actor-leader">[FIELD_LEADER | T-01-LEAD]</span> Broadcasted VHF radio check-in (Signal 5/5 at Base)`,
+    time: '2m ago',
+    color: '#10B981',
   });
 
   SAR.activityLog = logs;
@@ -307,8 +355,9 @@ const Auth = {
       if (typeof updateBadges === 'function') {
         updateBadges();
       }
-      if (typeof App !== 'undefined' && App.currentPage) {
-        App.navigate(App.currentPage);
+      if (typeof App !== 'undefined') {
+        const targetPage = App.getDefaultPageForRole ? App.getDefaultPageForRole(data.user.role) : (App.currentPage || 'dashboard');
+        App.navigate(targetPage);
       }
 
       return true;
@@ -689,5 +738,99 @@ async function fetchAllSARData() {
   // Generate dynamic live logs from real DB data
   refreshDynamicActivityLog();
 
+  // Initialize real-time Socket.IO stream
+  initSocketIO();
+
   return isApiOnline;
+}
+
+// ── REAL-TIME TACTICAL SOCKET.IO EVENT STREAM ─────────
+let sarSocket = null;
+function initSocketIO() {
+  if (typeof io === 'undefined') return;
+  if (sarSocket) return;
+
+  try {
+    sarSocket = io(API_BASE_URL.replace('/api', ''), {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+    });
+
+    sarSocket.on('connect', () => {
+      console.log('⚡ Connected to real-time tactical stream:', sarSocket.id);
+    });
+
+    sarSocket.on('activity:log', (entry) => {
+      SAR.activityLog.unshift(entry);
+      if (SAR.activityLog.length > 30) SAR.activityLog.pop();
+
+      if (typeof appendActivityFeedItem === 'function') {
+        appendActivityFeedItem(entry);
+      }
+    });
+
+    // Real-time synchronization of domain models
+    sarSocket.on('incident:created', (data) => {
+      if (!SAR.incidents.some(i => i.id === data.id)) {
+        SAR.incidents.unshift(data);
+        if (typeof App !== 'undefined' && App.currentPage === 'incidents') renderIncidents();
+        if (typeof App !== 'undefined' && App.currentPage === 'dashboard') renderDashboard();
+        if (typeof updateBadges === 'function') updateBadges();
+      }
+    });
+
+    sarSocket.on('incident:updated', (data) => {
+      const idx = SAR.incidents.findIndex(i => i.id === data.id);
+      if (idx !== -1) SAR.incidents[idx] = { ...SAR.incidents[idx], ...data };
+      if (typeof App !== 'undefined' && App.currentPage === 'incidents') renderIncidents();
+      if (typeof App !== 'undefined' && App.currentPage === 'dashboard') renderDashboard();
+      if (typeof updateBadges === 'function') updateBadges();
+    });
+
+    sarSocket.on('zone:created', (data) => {
+      if (!SAR.zones.some(z => z.id === data.id)) {
+        SAR.zones.push(data);
+        if (typeof App !== 'undefined' && App.currentPage === 'map') renderMapZones();
+      }
+    });
+
+    sarSocket.on('zone:updated', (data) => {
+      const idx = SAR.zones.findIndex(z => z.id === data.id);
+      if (idx !== -1) SAR.zones[idx] = { ...SAR.zones[idx], ...data };
+      if (typeof App !== 'undefined' && App.currentPage === 'map') renderMapZones();
+      if (typeof App !== 'undefined' && App.currentPage === 'dashboard') renderDashboard();
+    });
+
+    sarSocket.on('team:updated', (data) => {
+      const idx = SAR.teams.findIndex(t => t.id === data.id);
+      if (idx !== -1) SAR.teams[idx] = { ...SAR.teams[idx], ...data };
+      if (typeof App !== 'undefined' && App.currentPage === 'teams') renderTeams();
+      if (typeof App !== 'undefined' && App.currentPage === 'map') renderMapTeams();
+    });
+
+    sarSocket.on('resource:created', (data) => {
+      if (!SAR.resources.some(r => r.id === data.id)) {
+        SAR.resources.unshift(data);
+        if (typeof App !== 'undefined' && App.currentPage === 'resources') renderResources();
+        if (typeof updateBadges === 'function') updateBadges();
+      }
+    });
+
+    sarSocket.on('resource:updated', (data) => {
+      const idx = SAR.resources.findIndex(r => r.id === data.id);
+      if (idx !== -1) SAR.resources[idx] = { ...SAR.resources[idx], ...data };
+      if (typeof App !== 'undefined' && App.currentPage === 'resources') renderResources();
+      if (typeof updateBadges === 'function') updateBadges();
+    });
+
+    sarSocket.on('finding:created', (data) => {
+      if (!SAR.findings.some(f => f.id === data.id)) {
+        SAR.findings.unshift(data);
+        if (typeof App !== 'undefined' && App.currentPage === 'findings') renderFindings();
+        if (typeof App !== 'undefined' && App.currentPage === 'map') renderMapFindings();
+      }
+    });
+  } catch (err) {
+    console.warn('Socket.IO connection notice:', err.message);
+  }
 }

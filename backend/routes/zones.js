@@ -42,8 +42,18 @@ router.post('/', verifyToken, authorizeRoles('COMMANDER', 'COORDINATOR'), async 
 
     const serialized = zone.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
     if (req.app.get('io')) {
-      req.app.get('io').emit('zone:created', serialized);
+      req.app.get('io').emit('zone:created', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> Designated search sector: <strong>${serialized.name}</strong> (${serialized.id})`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: '#0284c7',
+      });
     }
 
     return res.status(201).json({
@@ -101,8 +111,22 @@ router.patch('/:id', verifyToken, async (req, res) => {
 
     const serialized = zone.serialize();
 
+    const actorTag = `[${req.user.role} | ${req.user.callsign || 'HQ'}]`;
+    const actionDesc = updates.progress !== undefined
+      ? `Updated sector <strong>${serialized.name}</strong> progress to <strong>${serialized.progress}%</strong> [${serialized.status.toUpperCase()}]`
+      : `Updated sector <strong>${serialized.name}</strong> (${serialized.id})`;
+
     if (req.app.get('io')) {
-      req.app.get('io').emit('zone:updated', serialized);
+      req.app.get('io').emit('zone:updated', { ...serialized, actor: req.user.serialize() });
+      req.app.get('io').emit('activity:log', {
+        id: 'act-' + Date.now(),
+        actor: req.user.serialize(),
+        tag: actorTag,
+        text: `<strong>${actorTag}</strong> ${actionDesc}`,
+        time: 'just now',
+        createdAt: new Date(),
+        color: '#10b981',
+      });
     }
 
     return res.json({

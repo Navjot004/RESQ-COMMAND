@@ -15,16 +15,25 @@ function renderIncidents() {
     );
   }
 
+  const canCreate = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER');
+  const actionButton = canCreate ? `
+    <button class="btn btn-primary" onclick="openCreateIncidentModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Incident
+    </button>
+  ` : `
+    <div class="role-clearance-pill">
+      🔒 Commander Only (+ New Incident)
+    </div>
+  `;
+
   root.innerHTML = `
     <div class="page-header">
       <div class="page-header-left">
         <h2>Incident Management</h2>
         <p>${SAR.incidents.length} total incidents · ${SAR.incidents.filter(i=>i.status==='active').length} active</p>
       </div>
-      <button class="btn btn-primary" onclick="openCreateIncidentModal()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New Incident
-      </button>
+      ${actionButton}
     </div>
 
     <div class="filter-bar">
@@ -358,10 +367,56 @@ function openIncidentDetail(id) {
     </div>
 
     <div class="form-actions" style="margin-top:20px">
-      <button class="btn btn-secondary" onclick="cycleIncidentStatus('${id}');Modal.close()">Update Status</button>
-      <button class="btn btn-primary" onclick="Modal.close();App.navigate('map')">View on Map</button>
+      ${(() => {
+        const canUpdateStatus = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'COORDINATOR');
+        const canDelete = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER');
+
+        const statusBtn = canUpdateStatus
+          ? `<button class="btn btn-secondary" onclick="cycleIncidentStatus('${id}');Modal.close()">Update Status (${inc.status.toUpperCase()})</button>`
+          : `<span class="read-only-badge">🔒 Status Updates Restricted</span>`;
+
+        const deleteBtn = canDelete
+          ? `<button class="btn btn-danger" onclick="deleteIncidentPrompt('${id}')" style="margin-right:auto">🗑️ Delete</button>`
+          : ``;
+
+        return `
+          ${deleteBtn}
+          ${statusBtn}
+          <button class="btn btn-primary" onclick="Modal.close();App.navigate('map')">View on Map</button>
+        `;
+      })()}
     </div>
   `);
+}
+
+async function deleteIncidentPrompt(id) {
+  const inc = SAR.getIncident(id);
+  if (!inc) return;
+
+  if (!confirm(`Are you sure you want to permanently delete Incident ${inc.id} (${inc.title})? Commander authorization required.`)) {
+    return;
+  }
+
+  try {
+    const targetId = inc._dbId || id;
+    const res = await fetch(`${API_BASE_URL}/incidents/${targetId}`, {
+      method: 'DELETE',
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to delete incident');
+    }
+
+    Modal.close();
+    await fetchIncidents();
+    renderIncidents();
+    updateBadges();
+
+    Toast.show('success', 'Incident Deleted', `Incident ${id} has been permanently purged.`);
+  } catch (err) {
+    Toast.show('error', 'Delete Failed', err.message);
+  }
 }
 
 

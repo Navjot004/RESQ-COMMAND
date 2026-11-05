@@ -233,6 +233,8 @@
               <button class="layer-btn" id="cancelDrawBtn" title="Cancel drawing" style="display:none;color:var(--red);border-color:rgba(239,68,68,0.4)">
                 ✕ Abort
               </button>
+              <!-- Role specific controls container (Field Leader Sector Progress & Finding) -->
+              <div id="fieldLeaderMapControls" style="display:none"></div>
             </div>
           </div>
 
@@ -436,6 +438,7 @@
   </div>
 
   <!-- Scripts -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Leaflet.draw for polygon zone drawing -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>

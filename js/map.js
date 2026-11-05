@@ -197,7 +197,7 @@ function initMap() {
     });
   }
 
-  /* ── 8. Draw Zone button ── */
+  /* ── 8. Draw Zone button & Role Controls ── */
   const drawBtn   = document.getElementById('drawZoneBtn');
   const cancelBtn = document.getElementById('cancelDrawBtn');
   if (drawBtn) {
@@ -207,12 +207,106 @@ function initMap() {
     cancelBtn.addEventListener('click', () => disableDrawMode());
   }
 
+  // Apply role-based map controls
+  updateMapRoleControls();
+
   /* ── 9. Close panel ── */
   document.getElementById('closeMapPanel').addEventListener('click', () => {
     document.getElementById('mapDetailPanel').classList.remove('open');
   });
 
   mapInitialized = true;
+}
+
+/* ═══════════════════ ROLE-BASED MAP CONTROLS ══════════ */
+function updateMapRoleControls() {
+  const drawBtn = document.getElementById('drawZoneBtn');
+  const cancelBtn = document.getElementById('cancelDrawBtn');
+  const fieldControls = document.getElementById('fieldLeaderMapControls');
+
+  const canDraw = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'COORDINATOR');
+  const isLeader = typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER');
+
+  if (drawBtn) {
+    drawBtn.style.display = canDraw ? '' : 'none';
+  }
+  if (cancelBtn) {
+    if (!canDraw) cancelBtn.style.display = 'none';
+  }
+
+  if (fieldControls) {
+    if (isLeader) {
+      fieldControls.style.display = 'flex';
+      const myTeam = SAR.getMyTeam();
+      const myZone = SAR.getMyZone();
+      const currentProgress = myZone ? (myZone.progress || 0) : 0;
+      const zoneName = myZone ? myZone.name : 'Standby / Unassigned';
+
+      fieldControls.innerHTML = `
+        <div class="map-field-controls">
+          <span class="map-field-title">🥾 ${myTeam ? myTeam.name : 'Squad'}: <strong style="color:var(--text-primary)">${zoneName}</strong></span>
+          <input type="range" class="map-sector-slider" id="fieldSectorSlider" min="0" max="100" value="${currentProgress}" 
+            oninput="document.getElementById('fieldSectorVal').textContent = this.value + '%'" />
+          <span class="map-sector-val" id="fieldSectorVal">${currentProgress}%</span>
+          <button class="btn btn-sm btn-primary" onclick="updateFieldSectorProgress()">Save</button>
+        </div>
+        <button class="layer-btn" onclick="openLogFindingModal()" title="Report Field Finding" style="color:var(--green);border-color:rgba(16,185,129,0.4)">
+          📍 Report Finding
+        </button>
+      `;
+    } else {
+      fieldControls.style.display = 'none';
+      fieldControls.innerHTML = '';
+    }
+  }
+}
+
+async function updateFieldSectorProgress() {
+  const myZone = SAR.getMyZone();
+  if (!myZone) {
+    Toast.show('warning', 'No Sector Assigned', 'Your squad is currently on standby or unassigned.');
+    return;
+  }
+
+  const slider = document.getElementById('fieldSectorSlider');
+  const newProgress = parseInt(slider?.value || '0', 10);
+  const newStatus = newProgress >= 100 ? 'completed' : newProgress > 0 ? 'in-progress' : 'pending';
+
+  try {
+    const targetId = myZone._dbId || myZone.id;
+    const res = await fetch(`${API_BASE_URL}/zones/${targetId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        progress: newProgress,
+        status: newStatus
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Failed to update sector progress');
+    }
+
+    myZone.progress = newProgress;
+    myZone.status = newStatus;
+
+    // Refresh map polygon layers and panel
+    renderMapZones();
+    if (typeof updateBadges === 'function') updateBadges();
+
+    SAR.activityLog.unshift({
+      id: 'act-zone-' + Date.now(),
+      type: 'info',
+      text: `<strong>${myZone.name}</strong> progress updated to <strong>${newProgress}%</strong> [${newStatus.toUpperCase()}]`,
+      time: 'just now',
+      color: '#10b981'
+    });
+
+    Toast.show('success', 'Sector Sweep Updated', `${myZone.name} is now ${newProgress}% swept (${newStatus.toUpperCase()}).`);
+  } catch (err) {
+    Toast.show('error', 'Update Failed', err.message);
+  }
 }
 
 /* ═══════════════════ DRAW MODE ═══════════════════════ */
