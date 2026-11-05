@@ -314,9 +314,11 @@ async function saveNewZone(id, coords) {
   };
 
   try {
+    if (typeof ensureAuthToken === 'function') await ensureAuthToken();
+    const headers = typeof getAuthHeaders === 'function' ? getAuthHeaders() : { 'Content-Type': 'application/json' };
     const res = await fetch(`${API_BASE_URL}/zones/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(zonePayload),
     });
     if (res.ok) {

@@ -11,6 +11,42 @@ const Team = require('./models/Team');
 const Zone = require('./models/Zone');
 const Resource = require('./models/Resource');
 const Finding = require('./models/Finding');
+const User = require('./models/User');
+
+const usersData = [
+  {
+    name: 'Col. Vikram Rathore',
+    email: 'commander@resq.in',
+    password: 'password123',
+    role: 'COMMANDER',
+    callsign: 'COMMAND-01',
+    assigned_team: null,
+  },
+  {
+    name: 'Dr. Ananya Sharma',
+    email: 'coordinator@resq.in',
+    password: 'password123',
+    role: 'COORDINATOR',
+    callsign: 'OPS-COORD-01',
+    assigned_team: null,
+  },
+  {
+    name: 'Capt. Vikram Batra',
+    email: 'alpha.lead@resq.in',
+    password: 'password123',
+    role: 'FIELD_LEADER',
+    callsign: 'T-01-LEAD',
+    assigned_team: 'T-01', // Linked to Alpha Squad T-01
+  },
+  {
+    name: 'Sgt. Rajesh Kumar',
+    email: 'logistics@resq.in',
+    password: 'password123',
+    role: 'LOGISTICS',
+    callsign: 'SUPPLY-BASE',
+    assigned_team: null,
+  },
+];
 
 const incidentsData = [
   {
@@ -531,7 +567,15 @@ async function seedDatabase() {
     await Finding.insertMany(findingsData);
     console.log(`✅ Seeded ${findingsData.length} field findings & reports`);
 
-    console.log('🎯 Database successfully populated with real SAR data!');
+    // 6. Users (RBAC Demo Accounts)
+    await User.deleteMany({});
+    for (const u of usersData) {
+      await User.create(u); // Triggers bcrypt pre-save hash
+    }
+    console.log(`✅ Seeded ${usersData.length} RBAC demo accounts (password: 'password123')`);
+    console.table(usersData.map(u => ({ Email: u.email, Role: u.role, Callsign: u.callsign, Team: u.assigned_team || '—' })));
+
+    console.log('🎯 Database successfully populated with real SAR data and RBAC accounts!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Seeding Error:', error.message);

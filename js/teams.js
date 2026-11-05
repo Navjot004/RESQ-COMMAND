@@ -215,9 +215,11 @@ async function submitCreateTeam() {
   };
 
   try {
+    if (typeof ensureAuthToken === 'function') await ensureAuthToken();
+    const headers = typeof getAuthHeaders === 'function' ? getAuthHeaders() : { 'Content-Type': 'application/json' };
     const res = await fetch(`${API_BASE_URL}/teams/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(teamPayload),
     });
     if (res.ok) {

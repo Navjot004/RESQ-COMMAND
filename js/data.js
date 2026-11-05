@@ -157,6 +157,37 @@ async function checkBackendHealth() {
   }
 }
 
+// ── AUTHENTICATION TOKEN MANAGEMENT ───────────────────
+let currentAuthToken = localStorage.getItem('sar_token') || null;
+
+async function ensureAuthToken() {
+  if (currentAuthToken) return currentAuthToken;
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'commander@resq.in', password: 'password123' }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      currentAuthToken = data.token;
+      localStorage.setItem('sar_token', data.token);
+      localStorage.setItem('sar_user', JSON.stringify(data.user));
+    }
+  } catch (e) {
+    console.warn('Auto-auth notice:', e.message);
+  }
+  return currentAuthToken;
+}
+
+function getAuthHeaders(extraHeaders = {}) {
+  const headers = { 'Content-Type': 'application/json', ...extraHeaders };
+  if (currentAuthToken) {
+    headers['Authorization'] = `Bearer ${currentAuthToken}`;
+  }
+  return headers;
+}
+
 // ── FETCH FUNCTIONS (DIRECT FROM MONGODB) ─────────────
 
 async function fetchIncidents() {
@@ -314,6 +345,9 @@ async function fetchAllSARData() {
     updateConnectionStatusUI(false);
     return false;
   }
+
+  // Ensure active auth session for write operations
+  await ensureAuthToken();
 
   const [incOk, teamsOk, zonesOk, resOk, fndOk] = await Promise.all([
     fetchIncidents(),

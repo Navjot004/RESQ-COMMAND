@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Incident = require('../models/Incident');
+const { verifyToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -38,8 +39,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/incidents/ - Create new incident
-router.post('/', async (req, res) => {
+// POST /api/incidents/ - Create new incident (COMMANDER ONLY)
+router.post('/', verifyToken, authorizeRoles('COMMANDER'), async (req, res) => {
   try {
     const {
       title,
@@ -74,7 +75,7 @@ router.post('/', async (req, res) => {
       longitude: Number(longitude),
       priority: upperPriority,
       status: 'ACTIVE',
-      reported_by: reported_by || 'Operations HQ',
+      reported_by: reported_by || req.user.name || 'Operations HQ',
       teams: Array.isArray(teams) ? teams : [],
       zones: Array.isArray(zones) ? zones : [],
       created_at: new Date(),
@@ -82,7 +83,6 @@ router.post('/', async (req, res) => {
 
     const serialized = incident.serialize();
 
-    // Broadcast real-time event if socket.io is available
     if (req.app.get('io')) {
       req.app.get('io').emit('incident:created', serialized);
     }
@@ -97,8 +97,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH /api/incidents/:id - Update incident
-router.patch('/:id', async (req, res) => {
+// PATCH /api/incidents/:id - Update incident (COMMANDER & COORDINATOR ONLY)
+router.patch('/:id', verifyToken, authorizeRoles('COMMANDER', 'COORDINATOR'), async (req, res) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -140,7 +140,6 @@ router.patch('/:id', async (req, res) => {
 
     const serialized = incident.serialize();
 
-    // Broadcast real-time update
     if (req.app.get('io')) {
       req.app.get('io').emit('incident:updated', serialized);
     }
@@ -155,8 +154,8 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/incidents/:id - Delete incident
-router.delete('/:id', async (req, res) => {
+// DELETE /api/incidents/:id - Delete incident (COMMANDER ONLY)
+router.delete('/:id', verifyToken, authorizeRoles('COMMANDER'), async (req, res) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -170,7 +169,6 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ detail: 'Incident not found' });
     }
 
-    // Broadcast real-time deletion
     if (req.app.get('io')) {
       req.app.get('io').emit('incident:deleted', { id });
     }
@@ -183,4 +181,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Finding = require('../models/Finding');
+const { verifyToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -15,8 +16,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/findings - Log a new finding
-router.post('/', async (req, res) => {
+// POST /api/findings - Log a new finding (FIELD_LEADER, COORDINATOR, and COMMANDER ONLY)
+router.post('/', verifyToken, authorizeRoles('FIELD_LEADER', 'COORDINATOR', 'COMMANDER'), async (req, res) => {
   try {
     const { type, title, location, zone, team, incident, lat, lng, description, status } = req.body;
 
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
       title: title.trim(),
       location: location.trim(),
       zone: zone || null,
-      team: team || null,
+      team: team || (req.user.assigned_team || null),
       incident: incident || null,
       lat: Number(lat),
       lng: Number(lng),
@@ -58,8 +59,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH /api/findings/:id - Update finding
-router.patch('/:id', async (req, res) => {
+// PATCH /api/findings/:id - Update finding (FIELD_LEADER, COORDINATOR, COMMANDER)
+router.patch('/:id', verifyToken, authorizeRoles('FIELD_LEADER', 'COORDINATOR', 'COMMANDER'), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -93,8 +94,8 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/findings/:id - Delete finding
-router.delete('/:id', async (req, res) => {
+// DELETE /api/findings/:id - Delete finding (COMMANDER ONLY)
+router.delete('/:id', verifyToken, authorizeRoles('COMMANDER'), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -119,4 +120,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Zone = require('../models/Zone');
+const { verifyToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -15,8 +16,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/zones - Create a new search zone (e.g. drawn from map)
-router.post('/', async (req, res) => {
+// POST /api/zones - Create a new search zone (COMMANDER & COORDINATOR ONLY)
+router.post('/', verifyToken, authorizeRoles('COMMANDER', 'COORDINATOR'), async (req, res) => {
   try {
     const { name, incident, team, status, progress, lat, lng, coords } = req.body;
 
@@ -55,9 +56,33 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH /api/zones/:id - Update zone
-router.patch('/:id', async (req, res) => {
+// PATCH /api/zones/:id - Update zone (COMMANDER/COORDINATOR: all fields; FIELD_LEADER: progress & status only)
+router.patch('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
+  const userRole = (req.user?.role || '').toUpperCase();
+
+  const allowedRoles = ['COMMANDER', 'COORDINATOR', 'FIELD_LEADER'];
+  if (!allowedRoles.includes(userRole)) {
+    return res.status(403).json({
+      detail: `Access forbidden: Role '${req.user?.role}' is not authorized to update zones`,
+    });
+  }
+
+  const updates = { ...req.body };
+  delete updates._id;
+  delete updates.id;
+
+  // FIELD_LEADER can only update search progress and status
+  if (userRole === 'FIELD_LEADER') {
+    const keys = Object.keys(updates);
+    const forbiddenKeys = keys.filter((k) => k !== 'progress' && k !== 'status');
+
+    if (forbiddenKeys.length > 0) {
+      return res.status(403).json({
+        detail: `Access forbidden: Field Leaders can only update 'progress' and 'status'. Restricted fields: ${forbiddenKeys.join(', ')}`,
+      });
+    }
+  }
 
   try {
     const query = mongoose.Types.ObjectId.isValid(id)
@@ -66,7 +91,7 @@ router.patch('/:id', async (req, res) => {
 
     const zone = await Zone.findOneAndUpdate(
       query,
-      { $set: req.body },
+      { $set: updates },
       { new: true, runValidators: true }
     );
 
@@ -90,8 +115,8 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/zones/:id - Delete zone
-router.delete('/:id', async (req, res) => {
+// DELETE /api/zones/:id - Delete zone (COMMANDER ONLY)
+router.delete('/:id', verifyToken, authorizeRoles('COMMANDER'), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -116,4 +141,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

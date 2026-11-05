@@ -208,9 +208,11 @@ async function submitCreateResource() {
   };
 
   try {
+    if (typeof ensureAuthToken === 'function') await ensureAuthToken();
+    const headers = typeof getAuthHeaders === 'function' ? getAuthHeaders() : { 'Content-Type': 'application/json' };
     const res = await fetch(`${API_BASE_URL}/resources/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(resPayload),
     });
     if (res.ok) {

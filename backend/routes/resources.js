@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const Resource = require('../models/Resource');
+const { verifyToken, authorizeRoles } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -15,8 +16,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/resources - Request new resource
-router.post('/', async (req, res) => {
+// POST /api/resources - Request new resource (ANY AUTHENTICATED ROLE)
+router.post('/', verifyToken, async (req, res) => {
   try {
     const { item, category, qty, unit, team, incident, priority, notes } = req.body;
 
@@ -33,7 +34,7 @@ router.post('/', async (req, res) => {
       category,
       qty: qty || 1,
       unit: unit || 'units',
-      team: team || null,
+      team: team || (req.user.assigned_team || null),
       incident: incident || null,
       priority: priority || 'medium',
       status: 'pending',
@@ -57,8 +58,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH /api/resources/:id - Update status or details
-router.patch('/:id', async (req, res) => {
+// PATCH /api/resources/:id - Update status (COMMANDER & LOGISTICS ONLY)
+router.patch('/:id', verifyToken, authorizeRoles('COMMANDER', 'LOGISTICS'), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -92,8 +93,8 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/resources/:id - Delete resource
-router.delete('/:id', async (req, res) => {
+// DELETE /api/resources/:id - Delete resource (COMMANDER & LOGISTICS ONLY)
+router.delete('/:id', verifyToken, authorizeRoles('COMMANDER', 'LOGISTICS'), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -118,4 +119,3 @@ router.delete('/:id', async (req, res) => {
 });
 
 module.exports = router;
-

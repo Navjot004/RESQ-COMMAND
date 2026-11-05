@@ -245,11 +245,10 @@ async function submitCreateIncident() {
     }
 
     try {
+        await ensureAuthToken();
         const response = await fetch(`${API_BASE_URL}/incidents/`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 incident_id: incId,
                 title,
@@ -375,11 +374,11 @@ async function cycleIncidentStatus(id) {
     const newStatus = flow[(currentIndex + 1) % flow.length];
 
     try {
-        const response = await fetch(`${API_BASE_URL}/incidents/${id}`, {
+        await ensureAuthToken();
+        const targetId = inc._dbId || id;
+        const response = await fetch(`${API_BASE_URL}/incidents/${targetId}`, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
               status: newStatus === 'contained'
                 ? 'IN_PROGRESS'
