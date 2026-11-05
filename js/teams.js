@@ -8,6 +8,10 @@ function renderTeams() {
   const root = document.getElementById('teams-root');
   if (!root) return;
 
+  if (typeof renderFieldMissionConsole === 'function') {
+    renderFieldMissionConsole('fieldMissionConsoleTeams');
+  }
+
   let filtered = [...SAR.teams];
   if (teamFilter !== 'all') {
     filtered = filtered.filter(t => t.status === teamFilter);
@@ -15,12 +19,26 @@ function renderTeams() {
 
   // Highlight Field Leader's assigned squad at the top of the list
   const myTeamId = (typeof SAR !== 'undefined' && SAR.currentUser?.assigned_team) || 'T-01';
-  if (typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER') && myTeamId) {
+  const isLeader = typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER');
+  const isLogistics = typeof SAR !== 'undefined' && SAR.hasRole('LOGISTICS');
+  const myTeam = typeof SAR !== 'undefined' ? SAR.getMyTeam() : null;
+
+  if (isLeader && myTeamId) {
     filtered.sort((a, b) => {
       if (a.id === myTeamId) return -1;
       if (b.id === myTeamId) return 1;
       return 0;
     });
+  }
+
+  let headerTitle = 'Team Management';
+  let headerSub = `${SAR.teams.length} teams · ${SAR.teams.filter(t=>t.status==='deployed').length} deployed`;
+  if (isLeader) {
+    headerTitle = 'My Squad & Radio Check-in';
+    headerSub = `Field Command: ${myTeam ? myTeam.name : 'Alpha Mountain Rescue'} (${myTeam ? myTeam.id : 'T-01'}) · All other squads are read-only`;
+  } else if (isLogistics) {
+    headerTitle = 'Squad Equipment Roster';
+    headerSub = `Monitoring 8 rescue squads for equipment readiness, gear payloads, and logistics requests`;
   }
 
   const canCommission = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'COORDINATOR');
@@ -38,8 +56,8 @@ function renderTeams() {
   root.innerHTML = `
     <div class="page-header">
       <div class="page-header-left">
-        <h2>Team Management</h2>
-        <p>${SAR.teams.length} teams · ${SAR.teams.filter(t=>t.status==='deployed').length} deployed</p>
+        <h2>${headerTitle}</h2>
+        <p>${headerSub}</p>
       </div>
       ${actionButton}
     </div>

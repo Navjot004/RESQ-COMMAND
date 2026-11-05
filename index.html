@@ -43,8 +43,22 @@
       </button>
     </div>
 
+    <!-- ── PROMINENT SIDEBAR ROLE HEADER CARD ── -->
+    <div id="sidebarRoleCard" class="sidebar-role-card role-commander" title="Active Operator Tactical Clearance">
+      <div class="src-icon-wrap">
+        <span class="src-icon" id="srcRoleIcon">🎖️</span>
+      </div>
+      <div class="src-info">
+        <div class="src-title-row">
+          <span class="src-role-title" id="srcRoleTitle">Incident Commander</span>
+          <span class="src-callsign" id="srcCallsign">COMMAND-01</span>
+        </div>
+        <div class="src-clearance" id="srcClearance">Level 4 • Supreme Command</div>
+      </div>
+    </div>
+
     <nav class="sidebar-nav">
-      <div class="nav-section-label">Operations</div>
+      <div class="nav-section-label" id="nav-section-ops">Operations</div>
       <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
         <span class="nav-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -83,7 +97,7 @@
         </span>
         <span class="nav-label">Teams</span>
       </a>
-      <div class="nav-section-label">Resources</div>
+      <div class="nav-section-label" id="nav-section-res">Resources & Intel</div>
       <a href="#" class="nav-item" data-page="resources" id="nav-resources">
         <span class="nav-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -201,6 +215,9 @@
       <section id="page-map" class="page">
         <div class="map-page-layout">
 
+          <!-- Sticky Field Squad Mission Console (Visible for FIELD_LEADER) -->
+          <div id="fieldMissionConsoleMap" class="field-mission-console-container" style="display:none"></div>
+
           <!-- Row 1: Layer toggles + Draw -->
           <div class="map-controls-bar">
             <div class="map-layer-toggles">
@@ -271,6 +288,8 @@
 
       <!-- ─── TEAMS PAGE ─── -->
       <section id="page-teams" class="page">
+        <!-- Sticky Field Squad Mission Console (Visible for FIELD_LEADER) -->
+        <div id="fieldMissionConsoleTeams" class="field-mission-console-container" style="display:none"></div>
         <div id="teams-root"></div>
       </section>
 

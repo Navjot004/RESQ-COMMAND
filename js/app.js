@@ -71,57 +71,180 @@ const Toast = {
   },
 };
 
+// ── ROLE-BASED NAVIGATION CONFIGURATION ────────────────
+const ROLE_NAV_CONFIG = {
+  COMMANDER: {
+    roleName: 'Incident Commander',
+    callsign: 'COMMAND-01',
+    clearance: 'Level 4 • Supreme Command',
+    icon: '🎖️',
+    cardClass: 'role-commander',
+    defaultPage: 'dashboard',
+    sectionOpsLabel: 'Command Operations',
+    sectionResLabel: 'Logistics & Intel',
+    hideResSection: false,
+    sectionOpsOrder: 0,
+    sectionResOrder: 5,
+    tabs: {
+      dashboard: { visible: true, label: 'Command Overview', order: 1 },
+      map:       { visible: true, label: 'Master GIS & Sectors', order: 2 },
+      incidents: { visible: true, label: 'Incident Command', order: 3 },
+      teams:     { visible: true, label: 'Squad Deployment', order: 4 },
+      resources: { visible: true, label: 'Supply Approvals', order: 6 },
+      findings:  { visible: true, label: 'Intel & Findings', order: 7 },
+    }
+  },
+  COORDINATOR: {
+    roleName: 'Zone Coordinator',
+    callsign: 'OPS-COORD-01',
+    clearance: 'Level 3 • Sector Dispatch',
+    icon: '📡',
+    cardClass: 'role-coordinator',
+    defaultPage: 'map',
+    sectionOpsLabel: 'Sector Operations',
+    sectionResLabel: 'Field Intel',
+    hideResSection: false,
+    sectionOpsOrder: 0,
+    sectionResOrder: 5,
+    tabs: {
+      dashboard: { visible: true, label: 'Sector Dispatch', order: 1 },
+      map:       { visible: true, label: 'Draw & Assign Zones', order: 2 },
+      incidents: { visible: true, label: 'Active Triage', order: 3 },
+      teams:     { visible: true, label: 'Squad Comms & Roster', order: 4 },
+      findings:  { visible: true, label: 'Verify Field Clues', order: 6 },
+      resources: { visible: false, label: '', order: 99 }, // HIDE resources completely from sidebar!
+    }
+  },
+  FIELD_LEADER: {
+    roleName: 'Field Team Leader',
+    callsign: 'T-01-LEAD',
+    clearance: 'Level 2 • Tactical Field Unit',
+    icon: '🥾',
+    cardClass: 'role-leader',
+    defaultPage: 'map', // Default landing page for FIELD_LEADER
+    sectionOpsLabel: 'Field Operations',
+    sectionResLabel: 'Reporting & Gear',
+    hideResSection: false,
+    sectionOpsOrder: 0,
+    sectionResOrder: 5,
+    tabs: {
+      dashboard: { visible: false, label: '', order: 99 }, // HIDE dashboard completely!
+      incidents: { visible: false, label: '', order: 99 }, // HIDE incidents completely!
+      map:       { visible: true, label: 'My Sector & GPS', order: 1 },
+      teams:     { visible: true, label: 'My Squad & Radio Check-in', order: 2 },
+      findings:  { visible: true, label: 'Report Field Finding', order: 6 },
+      resources: { visible: true, label: 'Request Field Gear', order: 7 },
+    }
+  },
+  LOGISTICS: {
+    roleName: 'Logistics Officer',
+    callsign: 'SUPPLY-BASE',
+    clearance: 'Level 2 • Warehouse & Depot',
+    icon: '📦',
+    cardClass: 'role-logistics',
+    defaultPage: 'resources', // Default landing page for LOGISTICS
+    sectionOpsLabel: 'Supply & Drop-Zones',
+    sectionResLabel: 'Supply Depot',
+    hideResSection: true,
+    sectionOpsOrder: 0,
+    sectionResOrder: 99,
+    tabs: {
+      dashboard: { visible: false, label: '', order: 99 }, // HIDE dashboard completely!
+      incidents: { visible: false, label: '', order: 99 }, // HIDE incidents completely!
+      findings:  { visible: false, label: '', order: 99 }, // HIDE findings completely!
+      resources: { visible: true, label: 'Supply Chain & Dispatch', order: 1 },
+      map:       { visible: true, label: 'Drop-Zone Map', order: 2 },
+      teams:     { visible: true, label: 'Squad Equipment Roster', order: 3 },
+    }
+  }
+};
+
 // ── ROUTING / NAVIGATION ───────────────────────────────
 const App = {
   currentPage: 'dashboard',
 
   getDefaultPageForRole(role) {
-    switch (role) {
-      case 'LOGISTICS':
-        return 'resources';
-      case 'FIELD_LEADER':
-        return 'teams';
-      case 'COORDINATOR':
-      case 'COMMANDER':
-      default:
-        return 'dashboard';
-    }
+    const r = role || (typeof SAR !== 'undefined' ? SAR.currentUser?.role : null) || 'COMMANDER';
+    return ROLE_NAV_CONFIG[r]?.defaultPage || 'dashboard';
   },
 
-  applyRoleNavigation() {
+  configureSidebarForRole(role) {
     const user = typeof SAR !== 'undefined' ? SAR.currentUser : null;
-    const role = user?.role || 'COMMANDER';
+    const currentRole = role || user?.role || 'COMMANDER';
+    const config = ROLE_NAV_CONFIG[currentRole] || ROLE_NAV_CONFIG.COMMANDER;
+    const callsign = user?.callsign || config.callsign;
 
-    // Reset role-specific nav classes & tags
-    document.querySelectorAll('.nav-item').forEach(item => {
-      item.classList.remove('nav-primary-role', 'nav-secondary-role');
-      item.querySelectorAll('.nav-role-tag').forEach(tag => tag.remove());
+    // 1. Update prominent Sidebar Role Header Card
+    const card = document.getElementById('sidebarRoleCard');
+    const icon = document.getElementById('srcRoleIcon');
+    const title = document.getElementById('srcRoleTitle');
+    const callsignEl = document.getElementById('srcCallsign');
+    const clearance = document.getElementById('srcClearance');
+
+    if (card) {
+      card.className = `sidebar-role-card ${config.cardClass}`;
+    }
+    if (icon) icon.textContent = config.icon;
+    if (title) title.textContent = config.roleName;
+    if (callsignEl) callsignEl.textContent = callsign;
+    if (clearance) clearance.textContent = config.clearance;
+
+    // 2. Filter & Rename each navigation tab
+    const allTabs = ['dashboard', 'map', 'incidents', 'teams', 'resources', 'findings'];
+    allTabs.forEach(tabKey => {
+      const navEl = document.getElementById(`nav-${tabKey}`);
+      if (!navEl) return;
+      const tabCfg = config.tabs[tabKey];
+      if (tabCfg && tabCfg.visible) {
+        navEl.style.display = 'flex';
+        navEl.classList.remove('nav-hidden');
+        navEl.style.order = tabCfg.order;
+        const label = navEl.querySelector('.nav-label');
+        if (label) label.textContent = tabCfg.label;
+      } else {
+        navEl.style.display = 'none';
+        navEl.classList.add('nav-hidden');
+        navEl.style.order = 99;
+      }
     });
 
-    const navDashboard = document.getElementById('nav-dashboard');
-    const navMap = document.getElementById('nav-map');
-    const navIncidents = document.getElementById('nav-incidents');
-    const navTeams = document.getElementById('nav-teams');
-    const navResources = document.getElementById('nav-resources');
-
-    if (role === 'LOGISTICS') {
-      navResources?.classList.add('nav-primary-role');
-      navMap?.classList.add('nav-secondary-role');
-      navResources?.insertAdjacentHTML('beforeend', '<span class="nav-role-tag role-tag-logistics">SUPPLY HUB</span>');
-    } else if (role === 'FIELD_LEADER') {
-      navTeams?.classList.add('nav-primary-role');
-      navMap?.classList.add('nav-secondary-role');
-      navTeams?.insertAdjacentHTML('beforeend', '<span class="nav-role-tag role-tag-leader">MY SQUAD</span>');
-    } else if (role === 'COORDINATOR') {
-      navMap?.classList.add('nav-primary-role');
-      navIncidents?.insertAdjacentHTML('beforeend', '<span class="nav-role-tag role-tag-coordinator">OPS</span>');
-    } else {
-      navDashboard?.classList.add('nav-primary-role');
+    // 3. Update section headers
+    const opsLabel = document.getElementById('nav-section-ops');
+    const resLabel = document.getElementById('nav-section-res');
+    if (opsLabel) {
+      opsLabel.textContent = config.sectionOpsLabel;
+      opsLabel.style.order = config.sectionOpsOrder;
+    }
+    if (resLabel) {
+      if (config.hideResSection) {
+        resLabel.style.display = 'none';
+      } else {
+        resLabel.style.display = 'block';
+        resLabel.textContent = config.sectionResLabel;
+        resLabel.style.order = config.sectionResOrder;
+      }
     }
   },
 
   navigate(page) {
-    // Hide all pages
+    const user = typeof SAR !== 'undefined' ? SAR.currentUser : null;
+    const role = user?.role || 'COMMANDER';
+    const config = ROLE_NAV_CONFIG[role] || ROLE_NAV_CONFIG.COMMANDER;
+
+    // Strict Route Guard: if user is not authorized to access this page, redirect to default
+    if (config.tabs[page] && !config.tabs[page].visible) {
+      console.warn(`[RBAC] Access denied to page "${page}" for role ${role}. Redirecting to ${config.defaultPage}`);
+      if (typeof Toast !== 'undefined') {
+        Toast.show(
+          'warning',
+          'Access Restricted',
+          `${config.roleName} does not have clearance for ${page.toUpperCase()}. Redirected to ${config.tabs[config.defaultPage].label}.`
+        );
+      }
+      page = config.defaultPage;
+    }
+
+    // Hide all pages & deactivate nav items
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
@@ -134,37 +257,167 @@ const App = {
     const navEl = document.getElementById(`nav-${page}`);
     if (navEl) navEl.classList.add('active');
 
-    // Apply role-based sidebar cues
-    this.applyRoleNavigation();
+    // Configure sidebar labels and visibility
+    this.configureSidebarForRole(role);
 
-    // Update topbar
-    const titles = {
-      dashboard: 'Operation Dashboard',
-      map:       'Search Map',
-      incidents: 'Incident Management',
-      teams:     'Team Management',
-      resources: 'Resource Management',
-      findings:  'Findings & Reports',
-    };
-    document.getElementById('pageTitle').textContent = titles[page] || page;
-    document.getElementById('breadcrumbCurrent').textContent = titles[page] || page;
+    // Dynamic Topbar Titles according to role's custom label
+    const customTitle = config.tabs[page]?.label;
+    const pageTitleEl = document.getElementById('pageTitle');
+    const bcCurrentEl = document.getElementById('breadcrumbCurrent');
+    if (pageTitleEl) pageTitleEl.textContent = customTitle || page;
+    if (bcCurrentEl) bcCurrentEl.textContent = customTitle || page;
 
     // Stop live feed if leaving dashboard
-    if (this.currentPage === 'dashboard' && page !== 'dashboard') stopLiveFeed();
+    if (this.currentPage === 'dashboard' && page !== 'dashboard') {
+      if (typeof stopLiveFeed === 'function') stopLiveFeed();
+    }
 
     this.currentPage = page;
 
-    // Render page content
+    // Render target page
     switch(page) {
-      case 'dashboard': renderDashboard(); startLiveFeed(); break;
-      case 'map':       setTimeout(initMap, 100); break;
-      case 'incidents': renderIncidents(); break;
-      case 'teams':     renderTeams(); break;
-      case 'resources': renderResources(); break;
-      case 'findings':  renderFindings(); break;
+      case 'dashboard':
+        if (typeof renderDashboard === 'function') renderDashboard();
+        if (typeof startLiveFeed === 'function') startLiveFeed();
+        break;
+      case 'map':
+        renderFieldMissionConsole('fieldMissionConsoleMap');
+        if (typeof updateMapRoleControls === 'function') updateMapRoleControls();
+        setTimeout(() => {
+          if (typeof initMap === 'function') initMap();
+        }, 100);
+        break;
+      case 'incidents':
+        if (typeof renderIncidents === 'function') renderIncidents();
+        break;
+      case 'teams':
+        renderFieldMissionConsole('fieldMissionConsoleTeams');
+        if (typeof renderTeams === 'function') renderTeams();
+        break;
+      case 'resources':
+        if (typeof renderResources === 'function') renderResources();
+        break;
+      case 'findings':
+        if (typeof renderFindings === 'function') renderFindings();
+        break;
     }
   },
 };
+
+// ── SHARED FIELD SQUAD MISSION CONSOLE (FIELD_LEADER) ──
+function renderFieldMissionConsole(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const isLeader = typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER');
+  if (!isLeader) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  container.style.display = 'block';
+  const myTeam = (typeof SAR !== 'undefined' && SAR.getMyTeam()) || {
+    id: 'T-01',
+    name: 'Alpha Mountain Rescue',
+    status: 'deployed',
+    contact: 'VHF 155.160 MHz (Ch 1)',
+    leader: 'Capt. Arjun Mehra'
+  };
+  const myZone = (typeof SAR !== 'undefined' && SAR.getMyZone()) || {
+    name: 'Sector Alpha (Rohtang Pass Corridor)',
+    progress: 65,
+    id: 'Z-01'
+  };
+
+  const currentProgress = myZone.progress !== undefined ? myZone.progress : 65;
+  const zoneName = myZone.name || 'Sector Alpha';
+  const sliderId = `fsmc_slider_${containerId}`;
+  const valId = `fsmc_val_${containerId}`;
+
+  container.innerHTML = `
+    <div class="field-mission-console">
+      <div class="fmc-col-lead">
+        <div class="fmc-badge">🥾 FIELD SQUAD MISSION CONSOLE</div>
+        <div class="fmc-team-info">
+          <span class="fmc-team-name">${myTeam.name}</span>
+          <span class="fmc-team-id">(${myTeam.id})</span>
+          <span class="fmc-status-pill fmc-status-${myTeam.status}">${myTeam.status.toUpperCase()}</span>
+          <span class="fmc-comms">📡 ${myTeam.contact || 'VHF 155.160 MHz'}</span>
+        </div>
+      </div>
+
+      <div class="fmc-col-sector">
+        <div class="fmc-sector-meta">
+          <span class="fmc-sector-label">Assigned Sector:</span>
+          <strong class="fmc-sector-name">${zoneName}</strong>
+        </div>
+        <div class="fmc-progress-ctrl">
+          <span class="fmc-ctrl-label">Clearance:</span>
+          <input type="range" class="fmc-slider" id="${sliderId}" min="0" max="100" value="${currentProgress}"
+            oninput="document.getElementById('${valId}').textContent = this.value + '%'" />
+          <span class="fmc-val" id="${valId}">${currentProgress}%</span>
+          <button class="btn btn-sm btn-primary fmc-save-btn" onclick="saveConsoleSectorProgress('${sliderId}', '${myZone.id || ''}')">
+            Save %
+          </button>
+        </div>
+      </div>
+
+      <div class="fmc-col-actions">
+        <button class="btn btn-sm btn-success fmc-action-btn" onclick="sendRadioCheckIn('${myTeam.id}')" title="Transmit VHF GPS & Heartbeat">
+          📡 Send Radio Check-in
+        </button>
+        <button class="btn btn-sm btn-accent fmc-action-btn" onclick="openLogFindingModal()" title="Log Clue, Survivor, or Hazard">
+          + 📍 Log Clue / Survivor
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function saveConsoleSectorProgress(sliderId, fallbackZoneId) {
+  const slider = document.getElementById(sliderId);
+  const newProgress = parseInt(slider?.value || '0', 10);
+  const myZone = (typeof SAR !== 'undefined' && SAR.getMyZone()) || SAR.zones.find(z => z.id === fallbackZoneId) || SAR.zones[0];
+
+  if (!myZone) {
+    if (typeof Toast !== 'undefined') {
+      Toast.show('warning', 'Sector Unassigned', 'No sector currently linked to your squad.');
+    }
+    return;
+  }
+
+  const newStatus = newProgress >= 100 ? 'completed' : newProgress > 0 ? 'in-progress' : 'pending';
+  const targetId = myZone._dbId || myZone.id;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/zones/${targetId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ progress: newProgress, status: newStatus }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Failed to update sector progress');
+    }
+
+    myZone.progress = newProgress;
+    myZone.status = newStatus;
+
+    if (typeof Toast !== 'undefined') {
+      Toast.show('success', 'Sector Progress Saved', `${myZone.name} updated to ${newProgress}% (${newStatus})`);
+    }
+
+    // Refresh views if open
+    if (App.currentPage === 'map' && typeof refreshMapLayers === 'function') refreshMapLayers();
+    if (App.currentPage === 'teams' && typeof renderTeams === 'function') renderTeams();
+  } catch (err) {
+    if (typeof Toast !== 'undefined') {
+      Toast.show('error', 'Update Failed', err.message);
+    }
+  }
+}
 
 // ── SIDEBAR & MOBILE DRAWER TOGGLE ──────────────────────
 const sidebarEl = document.getElementById('sidebar');

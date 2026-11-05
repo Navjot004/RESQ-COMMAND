@@ -284,6 +284,11 @@ const Auth = {
     if (sideAvatar) sideAvatar.textContent = initials;
     if (sideName) sideName.textContent = name;
     if (sideRole) sideRole.textContent = `${role} • ${callsign}`;
+
+    // Reconfigure Sidebar for current role
+    if (typeof App !== 'undefined' && typeof App.configureSidebarForRole === 'function') {
+      App.configureSidebarForRole(role);
+    }
   },
 
   showLoginOverlay(canDismiss = true) {

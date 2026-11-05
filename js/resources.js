@@ -20,17 +20,111 @@ function renderResources() {
   const dispatched = SAR.resources.filter(r=>r.status==='dispatched').length;
   const delivered  = SAR.resources.filter(r=>r.status==='delivered').length;
 
+  const isLogisticsOrCmd = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'LOGISTICS');
+  const isFieldLeader = typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER');
+  const isCoordinator = typeof SAR !== 'undefined' && SAR.hasRole('COORDINATOR');
+
+  let headerTitle = 'Resource Management';
+  let headerSub = `${SAR.resources.length} requests · ${pending} pending approval`;
+  let newReqBtnText = 'New Request';
+
+  if (typeof SAR !== 'undefined' && SAR.hasRole('LOGISTICS')) {
+    headerTitle = 'Supply Chain & Dispatch Hub';
+    headerSub = `${SAR.resources.length} requisitions · ${pending} awaiting depot clearance · ${dispatched} currently in transit`;
+    newReqBtnText = '+ New Supply Manifest';
+  } else if (isFieldLeader) {
+    headerTitle = 'Field Gear & Emergency Supplies';
+    headerSub = 'Request tactical equipment, cold-weather suits, medical kits, and thermal drones for your squad';
+    newReqBtnText = '+ Request Field Gear';
+  } else if (isCoordinator) {
+    headerTitle = 'Operational Sector Supplies';
+    headerSub = 'Review and request equipment required across active search sectors';
+    newReqBtnText = '+ Request Sector Gear';
+  } else if (typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER')) {
+    headerTitle = 'Logistics & Supply Approvals';
+    headerSub = `${SAR.resources.length} requisitions · Full executive approval & dispatch authority`;
+    newReqBtnText = '+ New Resource Request';
+  }
+
+  let warehousePipelineHeader = '';
+  if (isLogisticsOrCmd) {
+    warehousePipelineHeader = `
+      <div class="warehouse-pipeline-header">
+        <div class="wph-top-bar">
+          <div class="wph-title-group">
+            <span class="wph-icon">📦</span>
+            <div>
+              <div class="wph-title">WAREHOUSE DISPATCH & SUPPLY CHAIN PIPELINE</div>
+              <div class="wph-sub">Central Depot Logistics Control • Active Requisition Staging & Transit Control</div>
+            </div>
+          </div>
+          <div class="wph-pipeline-stepper">
+            <div class="wph-step ${pending > 0 ? 'active' : ''}">
+              <span class="wph-step-count">${pending}</span>
+              <span class="wph-step-name">Pending</span>
+            </div>
+            <div class="wph-arrow">➔</div>
+            <div class="wph-step ${approved > 0 ? 'active' : ''}">
+              <span class="wph-step-count">${approved}</span>
+              <span class="wph-step-name">Approved / Staged</span>
+            </div>
+            <div class="wph-arrow">➔</div>
+            <div class="wph-step ${dispatched > 0 ? 'active' : ''}">
+              <span class="wph-step-count">${dispatched}</span>
+              <span class="wph-step-name">In Transit 🚚</span>
+            </div>
+            <div class="wph-arrow">➔</div>
+            <div class="wph-step ${delivered > 0 ? 'active' : ''}">
+              <span class="wph-step-count">${delivered}</span>
+              <span class="wph-step-name">Delivered 📦</span>
+            </div>
+          </div>
+        </div>
+        <div class="wph-quick-actions">
+          <span class="wph-action-label">⚡ 1-Click Pipeline Actions:</span>
+          <button class="btn btn-sm btn-outline-success" onclick="quickBatchAdvance('pending', 'approved')" ${pending === 0 ? 'disabled' : ''} title="Approve all currently pending requests">
+            ✅ Approve All Pending (${pending})
+          </button>
+          <button class="btn btn-sm btn-outline-primary" onclick="quickBatchAdvance('approved', 'dispatched')" ${approved === 0 ? 'disabled' : ''} title="Dispatch all approved resources to the field">
+            🚚 Dispatch Staged Supplies (${approved})
+          </button>
+          <button class="btn btn-sm btn-outline-purple" onclick="quickBatchAdvance('dispatched', 'delivered')" ${dispatched === 0 ? 'disabled' : ''} title="Confirm all in-transit supplies delivered to destination">
+            📦 Confirm In-Transit Delivered (${dispatched})
+          </button>
+        </div>
+      </div>
+    `;
+  } else {
+    warehousePipelineHeader = `
+      <div class="field-gear-requisition-header">
+        <div class="fgrh-left">
+          <span class="fgrh-icon">🎒</span>
+          <div>
+            <div class="fgrh-title">FIELD UNIT SUPPLY & EQUIPMENT TRACKER</div>
+            <div class="fgrh-sub">Submit emergency field requisitions. Warehouse Logistics team approves and dispatches gear.</div>
+          </div>
+        </div>
+        <div class="fgrh-right">
+          <span class="fgrh-badge">🔒 Approvals Managed by Base Logistics</span>
+        </div>
+      </div>
+    `;
+  }
+
   root.innerHTML = `
     <div class="page-header">
       <div class="page-header-left">
-        <h2>Resource Management</h2>
-        <p>${SAR.resources.length} requests · ${pending} pending approval</p>
+        <h2>${headerTitle}</h2>
+        <p>${headerSub}</p>
       </div>
       <button class="btn btn-primary" onclick="openCreateResourceModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New Request
+        ${newReqBtnText}
       </button>
     </div>
+
+    <!-- Logistics Warehouse Pipeline Header -->
+    ${warehousePipelineHeader}
 
     <!-- Summary Row -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:0 24px 20px">
@@ -281,4 +375,51 @@ async function submitCreateResource() {
   renderResources();
   updateBadges();
   Toast.show('success', 'Request Submitted', `${res.id} queued for command authorization.`);
+}
+
+/* ── 1-CLICK LOGISTICS PIPELINE BATCH ADVANCE ────── */
+async function quickBatchAdvance(fromStatus, toStatus) {
+  const targets = SAR.resources.filter(r => r.status === fromStatus);
+  if (!targets.length) {
+    if (typeof Toast !== 'undefined') {
+      Toast.show('info', 'No Items', `No requests currently in "${fromStatus.toUpperCase()}" status.`);
+    }
+    return;
+  }
+
+  let count = 0;
+  for (const r of targets) {
+    const targetId = r._dbId || r.id;
+    try {
+      const res = await fetch(`${API_BASE_URL}/resources/${targetId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: toStatus }),
+      });
+      if (res.ok) {
+        r.status = toStatus;
+        count++;
+      }
+    } catch (err) {
+      console.warn('Batch update failed for item:', r.id, err);
+    }
+  }
+
+  const role = typeof SAR !== 'undefined' ? (SAR.currentUser?.role || 'LOGISTICS') : 'LOGISTICS';
+  const callsign = typeof SAR !== 'undefined' ? (SAR.currentUser?.callsign || 'SUPPLY-BASE') : 'SUPPLY-BASE';
+
+  SAR.activityLog.unshift({
+    id: 'act-res-batch-' + Date.now(),
+    type: 'info',
+    text: `<strong>[${role} | ${callsign}]</strong> Batch moved ${count} items: ${fromStatus.toUpperCase()} ➔ <strong>${toStatus.toUpperCase()}</strong>`,
+    time: 'just now',
+    color: '#f59e0b',
+  });
+
+  renderResources();
+  updateBadges();
+
+  if (typeof Toast !== 'undefined') {
+    Toast.show('success', 'Pipeline Advanced', `Successfully advanced ${count} requests to "${toStatus.toUpperCase()}".`);
+  }
 }

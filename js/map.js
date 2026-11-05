@@ -30,6 +30,8 @@ let mapFilters = {
 
 /* ═══════════════════════ INIT ═══════════════════════ */
 function initMap() {
+  updateMapRoleControls();
+
   if (mapInitialized && sarMap) {
     // Already initialised — just resize and refresh markers
     sarMap.invalidateSize();
@@ -234,30 +236,14 @@ function updateMapRoleControls() {
     if (!canDraw) cancelBtn.style.display = 'none';
   }
 
-  if (fieldControls) {
-    if (isLeader) {
-      fieldControls.style.display = 'flex';
-      const myTeam = SAR.getMyTeam();
-      const myZone = SAR.getMyZone();
-      const currentProgress = myZone ? (myZone.progress || 0) : 0;
-      const zoneName = myZone ? myZone.name : 'Standby / Unassigned';
+  // Inject Sticky Field Mission Console
+  if (typeof renderFieldMissionConsole === 'function') {
+    renderFieldMissionConsole('fieldMissionConsoleMap');
+  }
 
-      fieldControls.innerHTML = `
-        <div class="map-field-controls">
-          <span class="map-field-title">🥾 ${myTeam ? myTeam.name : 'Squad'}: <strong style="color:var(--text-primary)">${zoneName}</strong></span>
-          <input type="range" class="map-sector-slider" id="fieldSectorSlider" min="0" max="100" value="${currentProgress}" 
-            oninput="document.getElementById('fieldSectorVal').textContent = this.value + '%'" />
-          <span class="map-sector-val" id="fieldSectorVal">${currentProgress}%</span>
-          <button class="btn btn-sm btn-primary" onclick="updateFieldSectorProgress()">Save</button>
-        </div>
-        <button class="layer-btn" onclick="openLogFindingModal()" title="Report Field Finding" style="color:var(--green);border-color:rgba(16,185,129,0.4)">
-          📍 Report Finding
-        </button>
-      `;
-    } else {
-      fieldControls.style.display = 'none';
-      fieldControls.innerHTML = '';
-    }
+  if (fieldControls) {
+    fieldControls.style.display = 'none';
+    fieldControls.innerHTML = '';
   }
 }
 
