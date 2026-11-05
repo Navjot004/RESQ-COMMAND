@@ -23,12 +23,12 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ detail: 'Invalid incident ID' });
-  }
-
   try {
-    const incident = await Incident.findById(id);
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { incident_id: id }] }
+      : { incident_id: id };
+
+    const incident = await Incident.findOne(query);
     if (!incident) {
       return res.status(404).json({ detail: 'Incident not found' });
     }
@@ -111,10 +111,6 @@ router.post('/', verifyToken, authorizeRoles('COMMANDER'), async (req, res) => {
 router.patch('/:id', verifyToken, authorizeRoles('COMMANDER', 'COORDINATOR'), async (req, res) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ detail: 'Invalid incident ID' });
-  }
-
   const updates = { ...req.body };
   delete updates._id;
   delete updates.id;
@@ -132,14 +128,19 @@ router.patch('/:id', verifyToken, authorizeRoles('COMMANDER', 'COORDINATOR'), as
 
   if (updates.status) {
     updates.status = updates.status.toUpperCase();
+    if (updates.status === 'IN_PROGRESS') updates.status = 'CONTAINED';
     if (!VALID_STATUSES.includes(updates.status)) {
       return res.status(400).json({ detail: 'Invalid status. Must be ACTIVE, CONTAINED, or RESOLVED' });
     }
   }
 
   try {
-    const incident = await Incident.findByIdAndUpdate(
-      id,
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { incident_id: id }] }
+      : { incident_id: id };
+
+    const incident = await Incident.findOneAndUpdate(
+      query,
       { $set: updates },
       { new: true, runValidators: true }
     );
@@ -178,19 +179,19 @@ router.patch('/:id', verifyToken, authorizeRoles('COMMANDER', 'COORDINATOR'), as
 router.delete('/:id', verifyToken, authorizeRoles('COMMANDER'), async (req, res) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ detail: 'Invalid incident ID' });
-  }
-
   try {
-    const incident = await Incident.findByIdAndDelete(id);
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { $or: [{ _id: id }, { incident_id: id }] }
+      : { incident_id: id };
+
+    const incident = await Incident.findOneAndDelete(query);
 
     if (!incident) {
       return res.status(404).json({ detail: 'Incident not found' });
     }
 
     if (req.app.get('io')) {
-      req.app.get('io').emit('incident:deleted', { id });
+      req.app.get('io').emit('incident:deleted', { id: incident.incident_id || id });
     }
 
     return res.json({ message: 'Incident deleted successfully' });

@@ -424,9 +424,10 @@ async function cycleIncidentStatus(id) {
     const inc = SAR.getIncident(id);
     if (!inc) return;
 
+    const currentStatus = (inc.status || 'active').toLowerCase();
     const flow = ['active', 'contained', 'resolved'];
-    const currentIndex = flow.indexOf(inc.status);
-    const newStatus = flow[(currentIndex + 1) % flow.length];
+    const currentIndex = flow.indexOf(currentStatus);
+    const newStatus = flow[(currentIndex >= 0 ? currentIndex + 1 : 0) % flow.length];
 
     try {
         await ensureAuthToken();
@@ -435,17 +436,16 @@ async function cycleIncidentStatus(id) {
             method: 'PATCH',
             headers: getAuthHeaders(),
             body: JSON.stringify({
-              status: newStatus === 'contained'
-                ? 'IN_PROGRESS'
-                : newStatus.toUpperCase()
-       })
+              status: newStatus.toUpperCase()
+            })
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Status update failed');
+            throw new Error(error.detail || error.message || 'Status update failed');
         }
 
+        inc.status = newStatus;
         await fetchIncidents();
 
         renderIncidents();
@@ -458,7 +458,7 @@ async function cycleIncidentStatus(id) {
         Toast.show(
             'success',
             'Status Updated',
-            `${id} is now ${newStatus.toUpperCase()}.`
+            `${inc.id} status transitioned to ${newStatus.toUpperCase()}.`
         );
 
     } catch (error) {
