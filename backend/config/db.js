@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
 const path = require('path');
+
+// Fix for querySrv ECONNREFUSED on MongoDB Atlas SRV records
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch (err) {
+  // fallback if custom DNS servers cannot be set
+}
 
 if (!process.env.MONGODB_URL) {
   require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
