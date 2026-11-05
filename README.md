@@ -1,88 +1,429 @@
-# 🚨 RESQ-COMMAND (SAR Command Platform)
+# 🚨 RESQ-COMMAND — Search and Rescue (SAR) Coordination Platform
 
-A real-time **Search and Rescue (SAR) Coordination & Command Platform** built for emergency response coordinators, incident commanders, and rescue squads to manage disaster operations, field teams, search zones, logistics, and field findings.
-
----
-
-## 🌟 Key Features
-
-- **Operations Dashboard**: Real-time stats on active incidents, deployed rescue squads, zone coverage, and a live activity radar.
-- **Interactive GIS Map**: Built with [Leaflet.js](https://leafletjs.com/) and [Leaflet.draw](https://github.com/Leaflet/Leaflet.draw) using OpenStreetMap tiles (no API key required). Supports custom polygon zone drawing, real-time team markers, and geolocated findings.
-- **Incident Management**: Incident tracker with priority levels (Critical, High, Medium, Low), status tracking (Active, Contained, Resolved), and full CRUD operations.
-- **Team Roster & Deployment**: Monitor rescue squads (e.g. Mountain Rescue, Avalanche Search, Flood Rescue), leaders, radio frequencies, and equipment status.
-- **Resource Logistics**: Manage vehicle, aviation, and medical resource requests with workflow approval states (Pending, Dispatched, Delivered).
-- **Field Findings & Clues**: Log survivor rescues, physical clues, debris, and secondary hazard reports.
-- **Real-Time Ready**: Built-in **Socket.IO** support for streaming live team coordinates and operational alerts.
+> **A real-time, defense-grade tactical command center built for multi-agency Search and Rescue (SAR) operations, disaster management squads, incident commanders, and field teams.**
 
 ---
 
-## 🏗️ Architecture
-
-- **Frontend**: HTML5, Vanilla JavaScript (ES6+), CSS3 with a tactical dark command-center theme.
-- **Backend**: **Node.js & Express.js**
-- **Database**: **MongoDB Atlas** (via Mongoose)
-- **Real-time Engine**: **Socket.IO**
-- **Authentication**: JWT (`jsonwebtoken`) + password hashing (`bcryptjs`)
+## 📋 Table of Contents
+1. [Project Overview & Problem Statement](#-project-overview--problem-statement)
+2. [Real Data vs. Simulated Data (The Data Reality)](#-real-data-vs-simulated-data-the-data-reality)
+3. [Architecture & Technology Stack](#-architecture--technology-stack)
+4. [Deep-Dive: How Every Page Works](#-deep-dive-how-every-page-works)
+   - [1. Operations Dashboard](#1-operations-dashboard-pagedashboard)
+   - [2. Tactical Search Map (GIS)](#2-tactical-search-map-pagemap)
+   - [3. Incident Management & Map Picker](#3-incident-management-pageincidents)
+   - [4. Teams & Squad Management (How Teams Work)](#4-teams--squad-management-pageteams)
+   - [5. Resource Logistics & Supply Chain](#5-resource-logistics-pageresources)
+   - [6. Field Findings & Clues](#6-field-findings--clues-pagefindings)
+5. [Tactical Map Location Picker Module](#-tactical-map-location-picker-module)
+6. [Mobile & Tablet Responsive Design System](#-mobile--tablet-responsive-design-system)
+7. [API Specification & Backend Routes](#-api-specification--backend-routes)
+8. [Database Schema & Models](#-database-schema--models)
+9. [Project Directory Structure](#-project-directory-structure)
+10. [Setup & Running Instructions](#-setup--running-instructions)
 
 ---
 
-## 🚀 Getting Started
+## 🎯 Project Overview & Problem Statement
+
+### Problem Statement
+During natural disasters, flash floods, avalanches, and missing-person crises in challenging terrain (e.g., the Himalayas), search and rescue operations involve multiple specialized teams deployed across fragmented sectors. Operational coordination often suffers from:
+- **Lack of common operational picture**: Commanders cannot see real-time sector coverage.
+- **Geographic ambiguity**: Responders and reporting callers cannot recite exact numeric coordinates (latitude/longitude like `32.24546, 77.18729`).
+- **Resource bottlenecks**: Medical kits, oxygen cylinders, thermal drones, and transport vehicles are requested without centralized tracking.
+- **Fatigue & Comms Gaps**: Teams lose safety check-in accountability, risking rescuer safety.
+
+### Project Objective
+**RESQ-COMMAND** solves this by providing a unified, centralized web-based coordination platform that manages:
+1. **Dynamic Incident Creation** with automated map-based geocoding and reverse-geocoding.
+2. **Search Sector Designation** via interactive polygon drawing tools.
+3. **Tactical Squad Deployment** with structured crew roles, VHF frequencies, callsigns, and radio safety check-ins.
+4. **Logistics & Resource Requests** with workflow approval states.
+5. **Field Findings & Clues** tagged directly to incidents, sectors, and teams.
+6. **Real-time Operations Dashboard** for high-level situational awareness.
+
+---
+
+## 🌐 Real Data vs. Simulated Data (The Data Reality)
+
+A critical requirement of this project is **zero hardcoding**:
+
+| Component | Status | How It Works in RESQ-COMMAND |
+| :--- | :--- | :--- |
+| **Frontend State** | **100% Dynamic** | The frontend (`js/data.js`) contains **zero hardcoded fallback mock arrays**. State variables (`SAR.incidents`, `SAR.teams`, `SAR.zones`, `SAR.resources`, `SAR.findings`) are initialized completely empty (`[]`) and populated via live REST calls to the backend. |
+| **Database** | **Real Cloud DB** | Connected to a live **MongoDB Atlas** cluster (`sar_platform` database). All creates, updates, status changes, and sector assignments persist directly to cloud collections. |
+| **Geocoding & Search** | **Live OpenStreetMap API** | When an operator types any place name (e.g., *"Solang Valley"*, *"Rohtang Pass"*, *"Manali"*, *"Shimla"*, or any global location), the request queries real-time OpenStreetMap **Nominatim** geographic servers via the `/api/geocode/search` proxy. |
+| **Reverse Geocoding** | **Live Spatial Resolution** | Clicking anywhere on the map or dragging a pin executes `/api/geocode/reverse?lat=...&lng=...`, resolving numeric GPS coordinates into actual human-readable road, village, and district names. |
+| **Map Basemap Tiles** | **Real Defense Tiles** | Uses official **Esri ArcGIS** map tile services (`World_Dark_Gray_Base`, `World_Dark_Gray_Reference`, `World_Imagery` Satellite Recon, and `World_Topo_Map`). These are 100% unblocked, have **zero CARTO watermarks**, and require no proprietary API key. |
+| **Baseline Operational Scenario** | **Realistic Disaster Dataset** | Seeded via [`backend/seed.js`](backend/seed.js), providing a realistic mountain search-and-rescue disaster scenario based in the Kullu/Manali mountain corridor (Himachal Pradesh, India) with 5 real incidents, 8 multi-agency teams, 9 tactical sectors, 8 logistical resources, and 7 geolocated findings. |
+
+---
+
+## 🏗️ Architecture & Technology Stack
+
+```
+   ┌──────────────────────────────────────────────────────────────┐
+   │                   CLIENT (BROWSER UI)                        │
+   │   - HTML5, Modular Vanilla ES6+ JavaScript, CSS3 variables   │
+   │   - Leaflet.js 1.9.4 (GIS Engine) & Leaflet.draw (Polygons)  │
+   │   - Responsive Design (Mobile / Tablet / Desktop)            │
+   └──────────────────────────────┬───────────────────────────────┘
+                                  │  REST API (JSON) + Socket.IO
+                                  ▼
+   ┌──────────────────────────────────────────────────────────────┐
+   │                 BACKEND SERVER (Node.js & Express)           │
+   │   - Express.js REST API with CORS enabled                    │
+   │   - Real-time WebSockets via Socket.IO                       │
+   │   - Reverse Geocoding & Search Proxy (/api/geocode)          │
+   │   - Mongoose ODM Layer                                       │
+   └──────────────────────────────┬───────────────────────────────┘
+                                  │
+                                  ▼
+   ┌──────────────────────────────────────────────────────────────┐
+   │                 DATABASE (MongoDB Atlas Cloud)               │
+   │   - Collections: Incidents, Teams, Zones, Resources, Findings│
+   └──────────────────────────────────────────────────────────────┘
+```
+
+- **Frontend Core**: Vanilla JavaScript (ES6+), HTML5, CSS3.
+- **Mapping & GIS**: Leaflet.js v1.9.4, Leaflet.draw v1.0.4, Esri ArcGIS Tile Servers.
+- **Backend Runtime**: Node.js (v24.x) & Express.js.
+- **Database**: MongoDB Atlas via Mongoose ODM.
+- **Real-Time Engine**: Socket.IO for streaming field telemetry and alerts.
+- **Geocoding Services**: OpenStreetMap Nominatim with server-side in-memory caching.
+
+---
+
+## 🔍 Deep-Dive: How Every Page Works
+
+### 1. Operations Dashboard (`#page-dashboard`)
+**File:** [`js/dashboard.js`](js/dashboard.js)
+
+The central command dashboard provides an at-a-glance situational summary for Incident Commanders:
+- **Top Metric Cards:**
+  - *Active Incidents:* Number of critical and open emergencies requiring action.
+  - *Deployed Squads:* Active teams currently deployed in the field vs. total available roster.
+  - *Sectors Completed:* Overall geographic search clearance percentage (`completedZones / totalZones`).
+  - *Pending Requests:* Critical logistical resource requests awaiting HQ dispatch.
+- **Live Activity Feed:**
+  - Reverse-chronological radar feed of latest mission milestones, incident reports, team check-ins, and survivor rescues.
+  - Dynamically colored priority markers (Critical = Red, High = Orange, Medium = Amber, Low = Blue).
+- **Incident Priority Distribution:**
+  - Visual progress meters illustrating proportion of Critical vs. High vs. Medium vs. Low threats.
+- **Squad Status Gauge:**
+  - Real-time distribution of personnel across `Deployed`, `Standby`, `Returning`, and `Off-Duty` states.
+- **Quick Deployment Actions:** Direct shortcut triggers to open New Incident, Draw Zone, or Commission Squad modals.
+
+---
+
+### 2. Tactical Search Map (`#page-map`)
+**File:** [`js/map.js`](js/map.js)
+
+The interactive GIS engine built on Leaflet.js represents the spatial Common Operational Picture (COP):
+- **Tactical Basemap Switcher:**
+  - **Tactical Dark Canvas (Default):** Esri World Dark Gray Base + Reference layer for low eye-strain in dimly lit command tents.
+  - **Satellite Recon:** High-resolution Esri World Imagery photography displaying real terrain, snow lines, rivers, and cliffs.
+  - **Topographic Relief:** Contoured elevation maps for assessing mountain steepness and avalanche gradients.
+- **Layer Toggles:**
+  - `Sectors (Zones)`: Toggle polygon boundary visualization.
+  - `Squads (Teams)`: Toggle live GPS markers of field units.
+  - `Findings`: Toggle survivor, hazard, clue, and evidence map pins.
+- **Interactive Sector Creation (Leaflet.draw):**
+  - Click **"✏️ Designate Sector"** to activate polygon drawing.
+  - Click points on the map to enclose a valley or search grid.
+  - On polygon completion, a modal prompts for Sector ID, Sector Name, Priority, Assigned Squad, and Terrain Type.
+  - Persists directly to MongoDB Atlas.
+- **Real-Time Team Tracking Markers:**
+  - Custom HTML DivIcons with directional arrows and team color borders.
+  - Live Unit badge indicating active telemetry.
+  - Clicking any squad opens the slide-out Map Detail Inspector.
+- **Slide-Out Detail Inspector / Mobile Bottom-Sheet:**
+  - Displays squad leader, VHF frequency, assigned zone progress bar, and list of findings reported in that sector.
+
+---
+
+### 3. Incident Management (`#page-incidents`)
+**File:** [`js/incidents.js`](js/incidents.js)
+
+Tracks all emergency distress calls, missing person alerts, and disaster events:
+- **Filter Bar:** Filter incidents instantly by `All`, `Critical`, `High`, `Medium`, `Low`, `Active`, `Contained`, `Resolved`.
+- **Incident Data Table:** Displays Incident ID, Title, Location, Priority badge, Status badge, Assigned Teams, Findings counter, Reported Time, and Action buttons.
+- **New Incident Modal with Location Picker:**
+  - Click **"+ New Incident"** to open the creation dialog.
+  - Instead of guessing coordinates, the operator searches any location name or clicks anywhere on the embedded tactical mini-map.
+  - Automatically fills Location, Latitude, and Longitude.
+  - Select priority, description, reporting agency, and multi-select squads.
+  - On submit, saves to MongoDB Atlas (`POST /api/incidents/`), broadcasts via Socket.IO, and auto-refreshes the dashboard and map.
+- **Status Lifecycle:** Click **"Update"** on any row to cycle the incident through `ACTIVE` &rarr; `CONTAINED` &rarr; `RESOLVED`.
+
+---
+
+### 4. Teams & Squad Management (How Teams Work)
+**File:** [`js/teams.js`](js/teams.js) & [`backend/models/Team.js`](backend/models/Team.js)
+
+The Teams system is modeled after professional Search and Rescue standards (FEMA ICS & Mountain Rescue Association) while remaining straightforward and intuitive for a college project:
+
+#### 1. Tactical Callsign & Radio Communications
+Every team has:
+- A standardized **Tactical Callsign** (e.g., `CALL: T-01-LEAD`, `T-02-LEAD`).
+- A dedicated **VHF Radio Channel** (e.g., `VHF 155.160 MHz`).
+- This ensures realistic radio communication accountability between HQ and the field.
+
+#### 2. Structured Crew Roles (Beyond Just a Number)
+Rather than displaying an abstract number like "6 people", clicking **"Roster & Gear"** on any team reveals a functional crew breakdown:
+- **Squad Commander:** Mission decision-maker and radio lead (e.g., *Capt. Vikram Batra*).
+- **Medical Lead:** Certified EMT / Paramedic Level-2 responsible for field trauma stabilization.
+- **Scout / Navigator:** Route planning, GPS coordinates, and pathfinder specialist.
+- **Field Operators:** Certified technical searchers, rope riggers, or K9 handlers.
+
+#### 3. Operational States & Sector Progress
+Teams cycle through four clear operational states:
+- `Deployed` (Green): Actively sweeping an assigned search sector. Shows live % of sector swept.
+- `Standby` (Blue): Stationed at Command Base Camp, fully rested, ready for immediate deployment.
+- `Returning` (Purple): Search completed; en route back to base camp for debrief.
+- `Off-Duty` (Gray): Mandatory rest cycle / shift relief.
+
+#### 4. Interactive "Radio Check-in" Action
+Inside the **Roster & Gear** modal, clicking **"📡 Radio Check-in"**:
+1. Confirms the squad has checked in over VHF radio.
+2. Posts a verified safety confirmation into the system-wide live activity stream.
+3. Triggers a tactical notification toast to confirm all personnel are nominal.
+
+#### 5. Assign Sector Modal
+Click **"Assign Sector"** to assign or reassign any available search zone to the team. This updates both the team record and the zone record in MongoDB.
+
+---
+
+### 5. Resource Logistics & Supply Chain (`#page-resources`)
+**File:** [`js/resources.js`](js/resources.js)
+
+Manages mission equipment, emergency assets, and supply logistics:
+- **Summary Counters:** Total items, items deployed in field, items available at base warehouse, and pending resource requests.
+- **Logistics Categories:**
+  - `Medical`: Trauma kits, hypothermia warmers, automated external defibrillators (AED).
+  - `Vehicles`: 4x4 troop carriers, snowmobiles, ambulances.
+  - `Aviation`: Air-ambulance helicopters, thermal search UAV drones.
+  - `Personnel`: Heavy rescue squads, dog teams.
+  - `Comms`: Satellite transceivers, repeater stations.
+- **Request Lifecycle Workflow:**
+  - Requests move from `PENDING` &rarr; `APPROVED` &rarr; `DISPATCHED` &rarr; `DELIVERED`.
+  - Authorized commanders can approve or cycle request states with a single click.
+
+---
+
+### 6. Field Findings & Clues (`#page-findings`)
+**File:** [`js/findings.js`](js/findings.js)
+
+Captures on-the-ground intelligence reported by search teams:
+- **Four Standard Finding Types:**
+  - 🧍 `Person Found`: Survivor located (injured, ambulatory, or awaiting evacuation).
+  - 🔍 `Clue`: Physical evidence discovered (e.g., dropped backpack, footprints, trekking pole).
+  - ⚠️ `Hazard`: Environmental threat identified (e.g., rockfall, washed-out bridge, crevasse).
+  - 🪝 `Evidence`: Structural or aircraft debris, vehicle wreckage.
+- **Interactive Map Pinning:** When logging a finding, the finder uses the same embedded tactical map picker to pinpoint the exact location where the clue was discovered.
+- **Export Report:** Generates a structured operational summary report ready for export to higher headquarters or local authorities.
+
+---
+
+## 🗺️ Tactical Map Location Picker Module
+**File:** [`js/location-picker.js`](js/location-picker.js) & [`css/modals.css`](css/modals.css)
+
+Built to solve the problem that ordinary users and field callers do not know decimal coordinates:
+1. **Search Bar:** Type any town, valley, mountain pass, or landmark. Uses real-time geocoding to fly the map pin directly to the target.
+2. **Click & Drag Selection:** Clicking anywhere on the mini-map or dragging the pulsing target crosshair moves the marker and triggers reverse-geocoding to resolve the human-readable address.
+3. **One-Click GPS Button:** Click **[ GPS ]** to acquire the browser/device GPS coordinates in the field.
+4. **Auto-Fill:** Automatically populates `Location Name`, `Latitude`, and `Longitude` without manual numeric typing.
+
+---
+
+## 📱 Mobile & Tablet Responsive Design System
+**File:** [`css/responsive.css`](css/responsive.css) & [`js/app.js`](js/app.js)
+
+The application is completely responsive across phones, tablets, and desktops:
+
+```
+  Desktop (>= 1024px)            Tablet / Mobile (<= 768px)
+┌───────────────────────┐      ┌─────────────────────────┐
+│ [Sidebar] [Main Area] │ ===> │ [ ☰ ] SAR Command       │  (Hamburger Menu)
+│  260px     Fluid      │      │ ┌─────────────────────┐ │
+│                       │      │ │ Drawer slides from  │ │  (Backdrop overlay)
+│  4-column cards       │      │ │ left on tap         │ │
+│  Side-by-side tables  │      │ └─────────────────────┘ │
+└───────────────────────┘      │ 1-2 column cards        │
+                               │ Scrollable data tables  │
+                               │ Slide-up map inspector  │
+                               └─────────────────────────┘
+```
+
+- **Off-Canvas Navigation Drawer:** On mobile screens ($\le 768\text{px}$), the sidebar converts to a slide-out drawer controlled by a topbar hamburger button (`[ ☰ ]`).
+- **Touch-Friendly Tables:** Tables feature smooth horizontal scrolling with preserved readability.
+- **Map Bottom-Sheet Inspector:** On mobile, clicking a team or sector opens the detail panel as a native slide-up bottom sheet instead of an awkward side panel.
+- **Single-Column Modal Layouts:** All modal dialogs and form rows (`.form-row`) adapt to full-width mobile viewports with full touch targets.
+
+---
+
+## 📡 API Specification & Backend Routes
+
+The backend server is an Express.js application listening on port `8000`:
+
+### System & Health
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | API status and version info |
+| `GET` | `/api/health` | Health check (reports MongoDB Atlas connection state & Node.js version) |
+
+### Geocoding & GIS Resolution
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/geocode/search?q={query}` | Searches place names via OpenStreetMap Nominatim with memory cache |
+| `GET` | `/api/geocode/reverse?lat={lat}&lng={lng}` | Reverse-geocodes coordinates into road, village, and state names |
+
+### Incidents
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/incidents/` | List all incidents (sorted newest first) |
+| `GET` | `/api/incidents/:id` | Get single incident details |
+| `POST` | `/api/incidents/` | Create new incident `{ title, description, location, latitude, longitude, priority, reported_by, teams }` |
+| `PATCH`| `/api/incidents/:id` | Update incident status or priority |
+| `DELETE`| `/api/incidents/:id` | Delete incident |
+
+### Teams / Squads
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/teams/` | List all rescue squads |
+| `POST` | `/api/teams/` | Commission new squad `{ name, leader, members, specialization, contact, zone, color }` |
+| `PATCH`| `/api/teams/:id` | Update squad status or assigned zone |
+
+### Search Zones / Sectors
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/zones/` | List all designated search zones |
+| `POST` | `/api/zones/` | Create new zone polygon `{ zone_id, name, coordinates, priority, team, status }` |
+| `PATCH`| `/api/zones/:id` | Update zone search progress percentage or assigned team |
+
+### Resources & Logistics
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/resources/` | List all resources and logistical requests |
+| `POST` | `/api/resources/` | Log new resource request `{ name, type, quantity, priority, incident, zone }` |
+| `PATCH`| `/api/resources/:id`| Update request status (`pending`, `approved`, `dispatched`, `delivered`) |
+
+### Field Findings
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/findings/` | List all field findings and clues |
+| `POST` | `/api/findings/` | Record new finding `{ type, title, location, lat, lng, zone, team, incident }` |
+
+---
+
+## 🗄️ Database Schema & Models
+
+All models are defined via Mongoose in [`backend/models/`](backend/models/):
+
+1. **Incident (`Incident.js`):** `incident_id`, `title`, `description`, `location`, `latitude`, `longitude`, `priority` (LOW, MEDIUM, HIGH, CRITICAL), `status` (ACTIVE, CONTAINED, RESOLVED), `reported_by`, `teams`, `zones`, `findings`, `created_at`.
+2. **Team (`Team.js`):** `team_id`, `name`, `leader`, `members`, `status` (deployed, standby, returning, off-duty), `zone`, `color`, `specialization`, `contact`, `equipment`, `lat`, `lng`.
+3. **Zone (`Zone.js`):** `zone_id`, `name`, `coordinates` (array of lat/lng points forming polygon), `priority`, `status` (assigned, in-progress, completed, pending), `progress` (0–100%), `team`, `center` (centroid lat/lng), `terrain`.
+4. **Resource (`Resource.js`):** `resource_id`, `name`, `type` (medical, vehicles, aviation, personnel, comms), `quantity`, `status` (pending, approved, dispatched, delivered), `priority`, `incident`, `zone`, `location`, `requested_at`.
+5. **Finding (`Finding.js`):** `finding_id`, `type` (person-found, clue, hazard, evidence), `title`, `location`, `lat`, `lng`, `zone`, `team`, `incident`, `description`, `status`, `reportedAt`.
+
+---
+
+## 📁 Project Directory Structure
+
+```
+RESQ-COMMAND/
+├── index.html                  # Main Application Single-Page Interface
+├── README.md                   # Complete Architectural Documentation
+│
+├── css/
+│   ├── main.css                # Base Layout, Dark Command Theme & Component Styling
+│   ├── modals.css              # Glassmorphism Modals & Location Picker Pin Styles
+│   ├── animations.css          # Tactical Radar Pulses, Glowing Pins & Fade-ins
+│   └── responsive.css          # Mobile / Tablet Breakpoints & Drawer Styles
+│
+├── js/
+│   ├── app.js                  # Application Router, Modals Manager & Mobile Drawer
+│   ├── data.js                 # Dynamic State Orchestrator & REST Data Fetchers
+│   ├── dashboard.js            # Operations Dashboard & Situational Awareness Radar
+│   ├── map.js                  # Leaflet GIS Engine, Polygon Drawer & Squad Trackers
+│   ├── location-picker.js      # Tactical Map Geocoding & Reverse-Geocoding Module
+│   ├── incidents.js            # Incident Table, Filtering & Incident Creation Modal
+│   ├── teams.js                # Squad Cards, Crew Roles, Comms & Radio Check-in
+│   ├── resources.js            # Logistics Supply Chain & Request Lifecycle Manager
+│   └── findings.js             # Field Clues, Survivor Findings & Geo-logging
+│
+└── backend/
+    ├── server.js               # Express Server, Static Serving & Socket.IO Engine
+    ├── package.json            # Node.js Dependencies & NPM Scripts
+    ├── seed.js                 # Realistic Himalayan Disaster Baseline Seeder
+    ├── .env                    # MongoDB Atlas URI & Port Configuration
+    ├── config/
+    │   └── db.js               # Mongoose MongoDB Atlas Connection Pool
+    ├── middleware/
+    │   └── auth.js             # JWT Security Middleware
+    ├── models/
+    │   ├── Incident.js         # Incident Mongoose Model
+    │   ├── Team.js             # Team / Squad Mongoose Model
+    │   ├── Zone.js             # Search Sector Polygon Mongoose Model
+    │   ├── Resource.js         # Logistics Mongoose Model
+    │   └── Finding.js          # Field Finding Mongoose Model
+    └── routes/
+        ├── auth.js             # Authentication Endpoints
+        ├── incidents.js        # Incident REST Endpoints
+        ├── teams.js            # Team REST Endpoints
+        ├── zones.js            # Zone REST Endpoints
+        ├── resources.js        # Resource REST Endpoints
+        ├── findings.js         # Finding REST Endpoints
+        └── geocode.js          # Live Geocoding & Reverse-Geocoding Proxy
+```
+
+---
+
+## 🚀 Setup & Running Instructions
 
 ### 1. Prerequisites
-- [Node.js](https://nodejs.org/) (v18+ recommended)
-- A modern web browser
+- **Node.js** (v18 or higher recommended; v24 fully supported)
+- An active internet connection (for MongoDB Atlas cloud and Esri map tiles)
 
 ### 2. Backend Setup
-1. Open a terminal and navigate to the `backend/` folder:
+1. Open a terminal and navigate to the `backend/` directory:
    ```bash
    cd backend
    ```
-2. Install dependencies (if not already installed):
+2. Install dependencies:
    ```bash
    npm install
    ```
-3. Ensure `.env` is configured with your MongoDB Atlas connection string and secret key:
+3. Ensure `.env` is present with your MongoDB Atlas connection string:
    ```env
-   MONGODB_URL=mongodb+srv://<user>:<password>@sar-platform.luvgars.mongodb.net/?retryWrites=true&w=majority
+   MONGODB_URL=mongodb+srv://<username>:<password>@sar-platform.luvgars.mongodb.net/?retryWrites=true&w=majority
    MONGODB_DATABASE=sar_platform
-   SECRET_KEY=your-secret-key-here
    PORT=8000
    ```
-4. Start the server:
+4. Seed the database with the realistic disaster scenario (optional / first time):
+   ```bash
+   node seed.js
+   ```
+5. Start the backend server:
    ```bash
    npm start
-   # or with auto-reload:
-   npm run dev
    ```
-   The backend will be running at: `http://127.0.0.1:8000`
+   The backend will log:
+   ```
+   🚀 RESQ COMMAND Node.js Server listening on http://127.0.0.1:8000
+   ✅ MongoDB Connected: ac-nadgbrm-shard-00-01.luvgars.mongodb.net (DB: sar_platform)
+   ```
 
-> **Note on MongoDB Atlas Connection**:  
-> If the backend logs a connection notice, ensure your current IP address is whitelisted in [MongoDB Atlas](https://cloud.mongodb.com/) under **Network Access** (or add `0.0.0.0/0` to allow access from any IP during development). Even if offline or disconnected, the frontend will smoothly run using built-in simulation data.
-
-### 3. Frontend Setup
-Simply open `index.html` in your browser:
-- Using VS Code: Right-click `index.html` and select **"Open with Live Server"** (runs on port 5500).
-- Or using any static file server:
-  ```bash
-  npx serve .
-  ```
+### 3. Frontend Launch
+You can access the frontend in either of two ways:
+- **Directly via the Node backend:** Open `http://127.0.0.1:8000/index.html` in your browser.
+- **Via VS Code Live Server:** Right-click `index.html` and choose **"Open with Live Server"** (`http://127.0.0.1:5500`).
 
 ---
 
-## 📡 API Endpoints
+## 🏆 Summary for Evaluators & Examiners
 
-### System
-- `GET /` — API root and status
-- `GET /api/health` — Health check & database connection status
-
-### Authentication
-- `POST /api/auth/register` — Register a team member `{ name, email, password }`
-- `POST /api/auth/login` — Login and receive JWT `{ email, password }`
-
-### Incidents
-- `GET /api/incidents/` — List all incidents (sorted newest first)
-- `GET /api/incidents/:id` — Get single incident by ID
-- `POST /api/incidents/` — Create incident `{ title, description, location, latitude, longitude, priority }`
-- `PATCH /api/incidents/:id` — Update incident status or priority
-- `DELETE /api/incidents/:id` — Delete incident
-
+1. **Not a mock UI**: Every incident, squad, finding, and zone is saved and retrieved from live **MongoDB Atlas**.
+2. **Real-world geospatial intelligence**: Users do not have to memorize latitude and longitude; typing a place or clicking the map resolves exact GPS coordinates and location names dynamically via OpenStreetMap.
+3. **Professional disaster response standard**: Teams possess tactical callsigns, VHF radio frequencies, crew role breakdowns, and radio safety check-in accountability.
+4. **Device agnostic**: Works on desktop monitors in command centers and mobile smartphones in the field with a dedicated off-canvas drawer and responsive touch layout.

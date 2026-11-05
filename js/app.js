@@ -118,21 +118,42 @@ const App = {
   },
 };
 
-// ── SIDEBAR TOGGLE ────────────────────────────────────
-document.getElementById('sidebarToggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('collapsed');
-  // Invalidate map if open
+// ── SIDEBAR & MOBILE DRAWER TOGGLE ──────────────────────
+const sidebarEl = document.getElementById('sidebar');
+const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+  sidebarEl?.classList.toggle('collapsed');
   if (App.currentPage === 'map' && sarMap) {
     setTimeout(() => sarMap.invalidateSize(), 350);
   }
 });
+
+function closeMobileDrawer() {
+  sidebarEl?.classList.remove('mobile-open');
+  sidebarBackdrop?.classList.remove('active');
+}
+
+mobileMenuBtn?.addEventListener('click', () => {
+  sidebarEl?.classList.toggle('mobile-open');
+  sidebarBackdrop?.classList.toggle('active');
+});
+
+sidebarBackdrop?.addEventListener('click', closeMobileDrawer);
 
 // ── NAV CLICK HANDLERS ────────────────────────────────
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', (e) => {
     e.preventDefault();
     const page = item.dataset.page;
-    if (page) App.navigate(page);
+    if (page) {
+      App.navigate(page);
+      // Auto-close mobile drawer when user taps a navigation link
+      if (window.innerWidth <= 768) {
+        closeMobileDrawer();
+      }
+    }
   });
 });
 

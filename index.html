@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/animations.css" />
   <link rel="stylesheet" href="css/modals.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
 </head>
 <body>
 
@@ -119,17 +120,27 @@
     </div>
   </aside>
 
+  <!-- Mobile navigation backdrop overlay -->
+  <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
   <!-- ════════════════════════════════════ MAIN ════════════════════════════════════ -->
   <main class="main-content" id="mainContent">
 
     <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar-left">
-        <h1 class="page-title" id="pageTitle">Operation Dashboard</h1>
-        <div class="breadcrumb" id="breadcrumb">
-          <span>SAR Command</span>
-          <span class="bc-sep">›</span>
-          <span id="breadcrumbCurrent">Dashboard</span>
+        <button id="mobileMenuBtn" class="mobile-menu-btn" title="Open Menu" aria-label="Toggle navigation drawer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="topbar-titles">
+          <h1 class="page-title" id="pageTitle">Operation Dashboard</h1>
+          <div class="breadcrumb" id="breadcrumb">
+            <span>SAR Command</span>
+            <span class="bc-sep">›</span>
+            <span id="breadcrumbCurrent">Dashboard</span>
+          </div>
         </div>
       </div>
       <div class="topbar-right">

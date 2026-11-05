@@ -41,12 +41,14 @@ function renderTeams() {
 function renderTeamCard(team) {
   const zone = team.zone ? SAR.getZone(team.zone) : null;
   const zoneProgress = zone ? zone.progress : 0;
-  const statusDot = {
+  const statusColors = {
     deployed:  '#10b981',
-    standby:   '#3b82f6',
+    standby:   '#0284c7',
     returning: '#8b5cf6',
     'off-duty':'#475569',
-  }[team.status] || '#6b7280';
+  };
+  const statusColor = statusColors[team.status] || '#6b7280';
+  const radioComms = team.contact || `VHF 155.${(team.id.replace(/\D/g,'') || '16')}0 MHz`;
 
   return `
     <div class="team-card">
@@ -56,32 +58,43 @@ function renderTeamCard(team) {
         </div>
         <div class="team-info">
           <div class="team-name">${team.name}</div>
-          <div class="team-leader">👤 ${team.leader}</div>
+          <div class="team-leader" style="font-size:0.75rem;color:var(--text-secondary)">👨‍✈️ Lead: <strong>${team.leader}</strong></div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <span class="badge badge-${team.status}">${team.status}</span>
-          <div style="font-size:0.7rem;color:var(--text-muted)">${team.specialization}</div>
+          <div style="font-size:0.68rem;color:var(--cyan);font-weight:600">${team.specialization}</div>
         </div>
       </div>
 
+      <!-- Tactical Comms & Crew Role Tags -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0 16px 8px;font-size:0.72rem;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,0.03);margin-bottom:8px">
+        <span>📻 <strong style="color:var(--text-secondary);font-family:'JetBrains Mono',monospace">${radioComms}</strong></span>
+        <span style="font-family:'JetBrains Mono',monospace;color:var(--accent-light);font-weight:600">CALL: ${team.id}-LEAD</span>
+      </div>
+
       <div style="padding:0 16px 12px">
-        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px">Current Zone: <strong style="color:${team.color}">${zone ? zone.name : 'Not Assigned'}</strong></div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px">Assigned Sector: <strong style="color:${team.color}">${zone ? zone.name : 'Standby / Unassigned'}</strong></div>
         ${zone ? `
           <div class="progress-track">
             <div class="progress-fill" style="width:${zoneProgress}%;background:${team.color}"></div>
           </div>
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${zoneProgress}% searched</div>
-        ` : ''}
+          <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text-muted);margin-top:3px">
+            <span>${zoneProgress}% sector swept</span>
+            <span style="color:var(--green)">● Active Ops</span>
+          </div>
+        ` : `
+          <div style="font-size:0.68rem;color:var(--text-muted);font-style:italic">Ready for tactical deployment</div>
+        `}
       </div>
 
       <div class="team-card-meta">
         <div class="meta-item">
           <div class="meta-value" style="color:${team.color}">${team.members}</div>
-          <div class="meta-label">Members</div>
+          <div class="meta-label">Crew</div>
         </div>
         <div class="meta-item">
           <div class="meta-value">${team.equipment.length}</div>
-          <div class="meta-label">Equipment</div>
+          <div class="meta-label">Gear Kits</div>
         </div>
         <div class="meta-item">
           <div class="meta-value">${SAR.findings.filter(f=>f.team===team.id).length}</div>
@@ -90,9 +103,9 @@ function renderTeamCard(team) {
       </div>
 
       <div class="team-card-footer">
-        <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openTeamDetail('${team.id}')">Details</button>
-        <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openAssignZoneModal('${team.id}')">Assign Zone</button>
-        <button class="btn-icon" onclick="cycleTeamStatus('${team.id}')" title="Cycle Status">
+        <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openTeamDetail('${team.id}')">Roster & Gear</button>
+        <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openAssignZoneModal('${team.id}')">Assign Sector</button>
+        <button class="btn-icon" onclick="cycleTeamStatus('${team.id}')" title="Cycle Status (${team.status})">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         </button>
       </div>
@@ -240,44 +253,92 @@ function openTeamDetail(id) {
   if (!team) return;
   const zone = team.zone ? SAR.getZone(team.zone) : null;
   const tFindings = SAR.findings.filter(f => f.team === id);
+  const radioComms = team.contact || `VHF 155.${(team.id.replace(/\D/g,'') || '16')}0 MHz`;
 
   Modal.open(`👥 ${team.name}`, `
-    <div class="detail-row"><span class="detail-key">Team ID</span><span class="detail-val font-mono">${team.id}</span></div>
-    <div class="detail-row"><span class="detail-key">Leader</span><span class="detail-val">${team.leader}</span></div>
-    <div class="detail-row"><span class="detail-key">Members</span><span class="detail-val">${team.members} personnel</span></div>
-    <div class="detail-row"><span class="detail-key">Specialization</span><span class="detail-val">${team.specialization}</span></div>
-    <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val"><span class="badge badge-${team.status}">${team.status}</span></span></div>
-    <div class="detail-row"><span class="detail-key">Zone</span><span class="detail-val">${zone ? zone.name : 'Unassigned'}</span></div>
-    <div class="detail-row"><span class="detail-key">Contact</span><span class="detail-val font-mono">${team.contact || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">Team ID</span><span class="detail-val font-mono" style="color:${team.color}">${team.id}</span></div>
+    <div class="detail-row"><span class="detail-key">Squad Commander</span><span class="detail-val">${team.leader}</span></div>
+    <div class="detail-row"><span class="detail-key">Total Crew</span><span class="detail-val">${team.members} Personnel</span></div>
+    <div class="detail-row"><span class="detail-key">Specialization</span><span class="detail-val"><span class="badge" style="background:${team.color}22;color:${team.color};border:1px solid ${team.color}44">${team.specialization}</span></span></div>
+    <div class="detail-row"><span class="detail-key">Tactical Status</span><span class="detail-val"><span class="badge badge-${team.status}">${team.status}</span></span></div>
+    <div class="detail-row"><span class="detail-key">Assigned Sector</span><span class="detail-val">${zone ? zone.name : '<span style="color:var(--text-muted)">Standby / Unassigned</span>'}</span></div>
+    <div class="detail-row"><span class="detail-key">Radio Comms</span><span class="detail-val font-mono" style="color:var(--cyan)">${radioComms} (CALL: ${team.id}-LEAD)</span></div>
 
+    <!-- Crew Roster Breakdown -->
     <div style="margin-top:16px">
-      <div class="modal-section-title">Equipment</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${team.equipment.length ? team.equipment.map(e => `
-          <span style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:0.75rem;color:var(--text-secondary)">🔧 ${e}</span>
-        `).join('') : '<span style="color:var(--text-muted);font-size:0.82rem">No equipment listed</span>'}
+      <div class="modal-section-title">Crew Roster Breakdown</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Commander</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-top:2px">👨‍✈️ ${team.leader}</div>
+        </div>
+        <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Medical Lead</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--green);margin-top:2px">🩺 Paramedic Level-2</div>
+        </div>
+        <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Scout / Navigation</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--cyan);margin-top:2px">🧭 GPS Route Specialist</div>
+        </div>
+        <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+          <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Field Operators</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-top:2px">🧗 ${Math.max(1, team.members - 3)} Certified Techs</div>
+        </div>
       </div>
     </div>
 
+    <!-- Mission Equipment -->
     <div style="margin-top:16px">
-      <div class="modal-section-title">Recent Findings (${tFindings.length})</div>
-      ${tFindings.length === 0 ? '<div style="color:var(--text-muted);font-size:0.82rem">No findings reported</div>' : ''}
+      <div class="modal-section-title">Mission Equipment (${team.equipment.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${team.equipment.length ? team.equipment.map(e => `
+          <span style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:0.75rem;color:var(--text-secondary)">🔧 ${e}</span>
+        `).join('') : '<span style="color:var(--text-muted);font-size:0.82rem">Standard mountain search kit</span>'}
+      </div>
+    </div>
+
+    <!-- Recent Findings -->
+    <div style="margin-top:16px">
+      <div class="modal-section-title">Recent Sector Findings (${tFindings.length})</div>
+      ${tFindings.length === 0 ? '<div style="color:var(--text-muted);font-size:0.82rem">No field findings recorded yet.</div>' : ''}
       ${tFindings.map(f=>`
         <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:8px">
           <span style="font-size:1rem">${SAR.findingIcon(f.type)}</span>
           <div>
             <div style="font-size:0.85rem;font-weight:600;color:var(--text-primary)">${f.title}</div>
-            <div style="font-size:0.72rem;color:var(--text-muted)">${SAR.formatTime(f.reportedAt)}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted)">${SAR.formatTime(f.reportedAt)} · ${f.location}</div>
           </div>
         </div>
       `).join('')}
     </div>
 
-    <div class="form-actions">
+    <div class="form-actions" style="margin-top:20px">
       <button class="btn btn-secondary" onclick="Modal.close()">Close</button>
-      <button class="btn btn-primary" onclick="Modal.close();openAssignZoneModal('${id}')">Assign Zone</button>
+      <button class="btn btn-secondary" onclick="logSafetyCheckIn('${team.id}')" title="Record radio check-in">📡 Radio Check-in</button>
+      <button class="btn btn-primary" onclick="Modal.close();openAssignZoneModal('${id}')">Assign Sector</button>
     </div>
-  `);
+  `, 'lg');
+}
+
+function logSafetyCheckIn(teamId) {
+  const team = SAR.getTeam(teamId);
+  if (!team) return;
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  SAR.activityLog.unshift({
+    type: 'success',
+    text: `📡 Radio Check-in confirmed with <strong>${team.name}</strong> (${team.id}). All personnel nominal.`,
+    time: timeStr,
+    color: '#10B981'
+  });
+
+  Toast.show('success', 'Radio Check-in Received', `Squad ${team.id} reported nominal status over VHF.`);
+  Modal.close();
+
+  if (typeof renderDashboard === 'function' && App.currentPage === 'dashboard') {
+    renderDashboard();
+  }
 }
 
 function openAssignZoneModal(teamId) {

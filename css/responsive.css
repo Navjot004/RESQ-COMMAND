@@ -1,0 +1,411 @@
+/* ══════════════════════════════════════════════════════
+   SAR COMMAND — RESPONSIVE & MOBILE DESIGN SYSTEM
+   Full responsiveness across Desktop, Tablet, and Mobile
+   (320px to 4K Ultra-wide)
+══════════════════════════════════════════════════════ */
+
+/* ── Mobile Menu Trigger Button (Hidden by default on Desktop) ── */
+.mobile-menu-btn {
+  display: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.mobile-menu-btn:hover {
+  border-color: var(--blue);
+  background: var(--bg-elevated);
+}
+
+/* ── Mobile Sidebar Drawer Backdrop ── */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 18, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1100;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.sidebar-backdrop.active {
+  display: block;
+  opacity: 1;
+}
+
+/* ── Topbar Titles Group ── */
+.topbar-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* ══════════════════════════════════════════════════════
+   TABLETS & MEDIUM LAPTOPS (<= 1024px)
+══════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    padding: 18px;
+    gap: 14px;
+  }
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .dash-row.cols-3-2 {
+    grid-template-columns: 1fr;
+    padding: 0 18px 18px;
+  }
+  .dash-row.cols-2-2 {
+    grid-template-columns: 1fr;
+    padding: 0 18px 18px;
+  }
+  .teams-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 0 18px 18px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   MOBILE & SMALL TABLETS (<= 768px)
+══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Body & General */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Show mobile hamburger menu button */
+  .mobile-menu-btn {
+    display: inline-flex;
+  }
+
+  /* Off-canvas mobile navigation drawer */
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 1200;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 12px 0 35px rgba(0, 0, 0, 0.85);
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  /* On mobile, reset any collapsed desktop styling */
+  .sidebar.collapsed {
+    width: 280px;
+  }
+  .sidebar.collapsed .brand-text,
+  .sidebar.collapsed .nav-label,
+  .sidebar.collapsed .nav-badge,
+  .sidebar.collapsed .nav-section-label,
+  .sidebar.collapsed .user-info,
+  .sidebar.collapsed .status-text {
+    display: block !important;
+  }
+
+  /* Topbar Mobile Adaptation */
+  .topbar {
+    height: 58px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .topbar-left {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+  }
+  .page-title {
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .breadcrumb {
+    display: none; /* Hide breadcrumbs on mobile to save space */
+  }
+  .topbar-right {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .search-bar {
+    padding: 6px 10px;
+  }
+  .search-bar input {
+    width: 110px;
+    font-size: 0.75rem;
+  }
+  .topbar-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .operation-time {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  /* Page container */
+  .page-container {
+    height: calc(100vh - 58px);
+    overflow-y: auto;
+  }
+
+  /* Page Headers & Controls */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px 14px 12px;
+  }
+  .page-header-left h2 {
+    font-size: 1.15rem;
+  }
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Horizontally Swipeable Filter Bars */
+  .filter-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 0 14px 12px;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  /* Dashboard Adjustments */
+  .dashboard-grid {
+    padding: 12px;
+    gap: 12px;
+  }
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .stat-card {
+    padding: 12px;
+    gap: 10px;
+  }
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .stat-val {
+    font-size: 1.3rem;
+  }
+  .stat-title {
+    font-size: 0.68rem;
+  }
+  .stat-sub {
+    font-size: 0.65rem;
+  }
+  .dash-row {
+    padding: 0 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Teams View on Mobile */
+  .teams-grid {
+    grid-template-columns: 1fr;
+    padding: 0 12px 16px;
+    gap: 12px;
+  }
+  .team-card {
+    border-radius: 10px;
+  }
+  .team-card-top {
+    padding: 14px;
+  }
+  .team-card-meta {
+    padding: 10px 14px;
+  }
+  .team-card-footer {
+    padding: 10px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Search Map Page Layout */
+  .map-page-layout {
+    height: calc(100vh - 58px);
+  }
+  .map-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .map-layer-toggles {
+    overflow-x: auto;
+    padding-bottom: 2px;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .map-layer-toggles::-webkit-scrollbar {
+    display: none;
+  }
+  .layer-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding: 5px 10px;
+    font-size: 0.72rem;
+  }
+  .map-filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+  .map-filter-select {
+    flex: 1;
+    min-width: 120px;
+    font-size: 0.72rem;
+    padding: 6px 10px;
+  }
+  .draw-zone-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 7px 12px;
+  }
+
+  /* Map Slide-Up Bottom Sheet on Mobile */
+  .map-detail-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 60vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    z-index: 1000;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.85);
+    background: var(--bg-surface);
+  }
+
+  /* Data Tables Mobile Scrolling */
+  .page-content {
+    padding: 0 12px 16px;
+  }
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 10px 12px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  /* Findings summary grid */
+  div[style*="grid-template-columns:repeat(4,1fr)"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    padding: 0 12px 14px !important;
+    gap: 10px !important;
+  }
+
+  /* Modals Mobile Adaptation */
+  .modal-overlay {
+    padding: 8px;
+    align-items: flex-end; /* Slides up naturally on mobile devices */
+  }
+  .modal-box,
+  .modal-box.modal-box-lg {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 94vh;
+    border-radius: 16px 16px 12px 12px;
+  }
+  .modal-header {
+    padding: 14px 16px;
+  }
+  .modal-title {
+    font-size: 0.92rem;
+  }
+  .modal-body {
+    padding: 14px 16px;
+  }
+  .form-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px;
+  }
+  .form-group {
+    margin-bottom: 12px;
+  }
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .geo-picker-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .geo-btn-action {
+    width: 100%;
+    justify-content: center;
+  }
+  .geo-mini-map {
+    height: 180px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   SMALL SMARTPHONES (<= 480px)
+══════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+  .search-bar {
+    display: none; /* Hide search bar on extra small screens */
+  }
+  .topbar-titles h1 {
+    font-size: 0.88rem;
+    max-width: 140px;
+  }
+  .stat-card {
+    padding: 12px 14px;
+  }
+  .team-card-meta {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
