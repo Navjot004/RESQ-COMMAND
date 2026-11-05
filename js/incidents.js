@@ -23,7 +23,7 @@ function renderIncidents() {
     </button>
   ` : `
     <div class="role-clearance-pill">
-      🔒 Commander Only (+ New Incident)
+      Commander Clearance Required
     </div>
   `;
 
@@ -108,7 +108,7 @@ function setIncidentFilter(f) {
 
 function openCreateIncidentModal() {
   const teams = SAR.teams.map(t => `<option value="${t.id}">${t.name} (${t.status})</option>`).join('');
-  Modal.open('🚨 Create New Incident', `
+  Modal.open('Create New Incident', `
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Incident ID</label>
@@ -117,10 +117,10 @@ function openCreateIncidentModal() {
       <div class="form-group">
         <label class="form-label">Priority *</label>
         <select class="form-control" id="incPriority">
-          <option value="critical">🔴 Critical</option>
-          <option value="high">🟠 High</option>
-          <option value="medium" selected>🟡 Medium</option>
-          <option value="low">🔵 Low</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
         </select>
       </div>
     </div>
@@ -166,7 +166,7 @@ function openCreateIncidentModal() {
       <div class="geo-map-wrapper">
         <div id="incMiniMap" class="geo-mini-map"></div>
         <div class="geo-map-crosshair-hint">
-          <span>👆 Click map or drag pin to auto-fill location & coordinates</span>
+          <span>Click map or drag pin to position coordinates</span>
           <span class="geo-coords-tag" id="incCoordsTag">LAT: 32.24550 | LNG: 77.18730</span>
         </div>
       </div>
@@ -310,7 +310,7 @@ function openIncidentDetail(id) {
   }).join('');
   const findings = SAR.findings.filter(f => f.incident === id);
 
-  Modal.open(`📋 Incident ${inc.id}`, `
+  Modal.open(`Incident ${inc.id}`, `
     <div class="detail-row">
       <span class="detail-key">Title</span>
       <span class="detail-val">${inc.title}</span>
@@ -373,10 +373,10 @@ function openIncidentDetail(id) {
 
         const statusBtn = canUpdateStatus
           ? `<button class="btn btn-secondary" onclick="cycleIncidentStatus('${id}');Modal.close()">Update Status (${inc.status.toUpperCase()})</button>`
-          : `<span class="read-only-badge">🔒 Status Updates Restricted</span>`;
+          : `<span class="read-only-badge">Status Updates Restricted</span>`;
 
         const deleteBtn = canDelete
-          ? `<button class="btn btn-danger" onclick="deleteIncidentPrompt('${id}')" style="margin-right:auto">🗑️ Delete</button>`
+          ? `<button class="btn btn-danger" onclick="deleteIncidentPrompt('${id}')" style="margin-right:auto">Delete Incident</button>`
           : ``;
 
         return `

@@ -324,7 +324,7 @@ function promptNewZone(layer) {
     `<option value="${t.id}">${t.name} (${t.status})</option>`
   ).join('');
 
-  Modal.open('🗺️ New Search Zone', `
+  Modal.open('New Search Zone', `
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Zone ID</label>
@@ -739,7 +739,7 @@ function createZonePopup(zone) {
 function updateZoneProgress(zoneId) {
   const zone = SAR.getZone(zoneId);
   if (!zone) return;
-  Modal.open(`📊 Update Progress — ${zone.name}`, `
+  Modal.open(`Update Progress — ${zone.name}`, `
     <div class="form-group">
       <label class="form-label">Search Coverage (%)</label>
       <input class="form-control" id="zoneProgressVal" type="range" min="0" max="100" value="${zone.progress}"

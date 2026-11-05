@@ -40,7 +40,7 @@ function renderFindings() {
             </button>
           ` : `
             <div class="role-clearance-pill">
-              🔒 Findings Logging Restricted (Field/Coord/Cmd Only)
+              Findings Logging Restricted (Field/Coord/Cmd Only)
             </div>
           `;
         })()}
@@ -49,10 +49,10 @@ function renderFindings() {
 
     <!-- Summary -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:0 24px 20px">
-      ${findingStatCard('🧍','Persons Found', personCount, '#10b981')}
-      ${findingStatCard('🔍','Clues',         clueCount,   '#3b82f6')}
-      ${findingStatCard('⚠️','Hazards',       hazardCount, '#ef4444')}
-      ${findingStatCard('🪝','Evidence',      evidCount,   '#8b5cf6')}
+      ${findingStatCard(SAR.findingIcon('person-found'), 'Persons Found', personCount, '#10b981')}
+      ${findingStatCard(SAR.findingIcon('clue'),         'Clues',         clueCount,   '#3b82f6')}
+      ${findingStatCard(SAR.findingIcon('hazard'),       'Hazards',       hazardCount, '#ef4444')}
+      ${findingStatCard(SAR.findingIcon('evidence'),     'Evidence',      evidCount,   '#8b5cf6')}
     </div>
 
     <div class="filter-bar">
@@ -141,7 +141,7 @@ function openLogFindingModal() {
   const zones     = SAR.zones.map(z => `<option value="${z.id}" ${myZone && myZone.id === z.id ? 'selected' : ''}>${z.name}</option>`).join('');
   const incidents = SAR.incidents.map(i => `<option value="${i.id}">${i.id} — ${i.title.substring(0, 30)}</option>`).join('');
 
-  Modal.open('🔍 Log New Finding', `
+  Modal.open('Log New Finding', `
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Finding ID</label>
@@ -150,10 +150,10 @@ function openLogFindingModal() {
       <div class="form-group">
         <label class="form-label">Type *</label>
         <select class="form-control" id="fndType">
-          <option value="person-found">🧍 Person Found</option>
-          <option value="clue">🔍 Clue</option>
-          <option value="evidence">🪝 Evidence</option>
-          <option value="hazard">⚠️ Hazard</option>
+          <option value="person-found">Person Found</option>
+          <option value="clue">Clue</option>
+          <option value="evidence">Evidence</option>
+          <option value="hazard">Hazard</option>
         </select>
       </div>
     </div>
@@ -213,7 +213,7 @@ function openLogFindingModal() {
       <div class="geo-map-wrapper">
         <div id="fndMiniMap" class="geo-mini-map"></div>
         <div class="geo-map-crosshair-hint">
-          <span>👆 Click map or drag pin to auto-fill location & coordinates</span>
+          <span>Click map or drag pin to position coordinates</span>
           <span class="geo-coords-tag" id="fndCoordsTag">LAT: 32.24550 | LNG: 77.18730</span>
         </div>
       </div>

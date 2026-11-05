@@ -49,7 +49,7 @@ function renderTeams() {
     </button>
   ` : `
     <div class="role-clearance-pill">
-      🔒 Squad Commission Restricted (Commander / Coord Only)
+      Squad Commission Restricted
     </div>
   `;
 
@@ -70,7 +70,7 @@ function renderTeams() {
 
     <div class="teams-grid">
       ${filtered.map(team => renderTeamCard(team)).join('')}
-      ${filtered.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No teams match this filter</div></div>' : ''}
+      ${filtered.length === 0 ? '<div class="empty-state"><div class="empty-state-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><div class="empty-state-text">No teams match this filter</div></div>' : ''}
     </div>
   `;
 }
@@ -96,7 +96,10 @@ function renderTeamCard(team) {
   if (isMySquad) {
     footerControls = `
       <button class="btn btn-sm btn-primary" onclick="sendRadioCheckIn('${team.id}')" title="Broadcast GPS & Heartbeat to HQ">
-        📡 Radio Check-in
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px">
+          <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
+        </svg>
+        Radio Check-in
       </button>
       <button class="btn btn-sm btn-secondary" onclick="cycleTeamStatus('${team.id}')" title="Cycle Status (${team.status})">
         Status: ${team.status.toUpperCase()} ⟳
@@ -106,7 +109,7 @@ function renderTeamCard(team) {
   } else if (isLeader) {
     footerControls = `
       <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openTeamDetail('${team.id}')">Roster & Gear</button>
-      <span class="read-only-badge" title="Field Leaders can only command their assigned squad">🔒 Squad Locked</span>
+      <span class="read-only-badge" title="Field Leaders can only command their assigned squad">Squad Locked</span>
     `;
   } else if (canManageAll) {
     footerControls = `
@@ -119,7 +122,7 @@ function renderTeamCard(team) {
   } else {
     footerControls = `
       <button class="btn btn-sm btn-secondary" style="flex:1" onclick="openTeamDetail('${team.id}')">Gear Roster</button>
-      <span class="read-only-badge">📦 Supply View</span>
+      <span class="read-only-badge">Supply View</span>
     `;
   }
 
@@ -127,17 +130,17 @@ function renderTeamCard(team) {
     <div class="team-card ${isMySquad ? 'team-card-my-squad' : ''}">
       ${isMySquad ? `
         <div class="my-squad-banner">
-          <span>⭐ MY ASSIGNED SQUAD (ALPHA)</span>
+          <span>ASSIGNED SQUAD (${team.name.toUpperCase()})</span>
           <span>CALL: ${SAR.currentUser?.callsign || 'T-01-LEAD'}</span>
         </div>
       ` : ''}
       <div class="team-card-top">
-        <div class="team-avatar" style="border: 1px solid var(--border); border-left: 3px solid ${team.color}; background: var(--bg-elevated); color: ${team.color}; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">
+        <div class="team-avatar" style="border: 1px solid var(--border); background: var(--bg-elevated); color: ${team.color}; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">
           ${team.id}
         </div>
         <div class="team-info">
           <div class="team-name">${team.name}</div>
-          <div class="team-leader" style="font-size:0.75rem;color:var(--text-secondary)">👨‍✈️ Lead: <strong>${team.leader}</strong></div>
+          <div class="team-leader" style="font-size:0.75rem;color:var(--text-secondary)">Lead: <strong>${team.leader}</strong></div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <span class="badge badge-${team.status}">${team.status}</span>
@@ -147,7 +150,7 @@ function renderTeamCard(team) {
 
       <!-- Tactical Comms & Crew Role Tags -->
       <div style="display:flex;justify-content:space-between;align-items:center;padding:0 16px 8px;font-size:0.72rem;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,0.03);margin-bottom:8px">
-        <span>📻 <strong style="color:var(--text-secondary);font-family:'JetBrains Mono',monospace">${radioComms}</strong></span>
+        <span>Comms: <strong style="color:var(--text-secondary);font-family:'JetBrains Mono',monospace">${radioComms}</strong></span>
         <span style="font-family:'JetBrains Mono',monospace;color:var(--accent-light);font-weight:600">CALL: ${team.id}-LEAD</span>
       </div>
 
@@ -196,7 +199,7 @@ function setTeamFilter(f) {
 function openCreateTeamModal() {
   const zones = SAR.zones.filter(z=>!z.team).map(z => `<option value="${z.id}">${z.name} (${z.status})</option>`).join('');
   const colors = SAR.teamColors;
-  Modal.open('👥 Create New Team', `
+  Modal.open('Create New Team', `
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Team Name *</label>
@@ -332,7 +335,7 @@ function openTeamDetail(id) {
   const tFindings = SAR.findings.filter(f => f.team === id);
   const radioComms = team.contact || `VHF 155.${(team.id.replace(/\D/g,'') || '16')}0 MHz`;
 
-  Modal.open(`👥 ${team.name}`, `
+  Modal.open(`${team.name}`, `
     <div class="detail-row"><span class="detail-key">Team ID</span><span class="detail-val font-mono" style="color:${team.color}">${team.id}</span></div>
     <div class="detail-row"><span class="detail-key">Squad Commander</span><span class="detail-val">${team.leader}</span></div>
     <div class="detail-row"><span class="detail-key">Total Crew</span><span class="detail-val">${team.members} Personnel</span></div>
@@ -347,19 +350,19 @@ function openTeamDetail(id) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
           <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Commander</div>
-          <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-top:2px">👨‍✈️ ${team.leader}</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-top:2px">${team.leader}</div>
         </div>
         <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
           <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Medical Lead</div>
-          <div style="font-size:0.8rem;font-weight:700;color:var(--green);margin-top:2px">🩺 Paramedic Level-2</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--green);margin-top:2px">Paramedic Level-2</div>
         </div>
         <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
           <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Scout / Navigation</div>
-          <div style="font-size:0.8rem;font-weight:700;color:var(--cyan);margin-top:2px">🧭 GPS Route Specialist</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--cyan);margin-top:2px">GPS Route Specialist</div>
         </div>
         <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
           <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase">Field Operators</div>
-          <div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-top:2px">🧗 ${Math.max(1, team.members - 3)} Certified Techs</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-top:2px">${Math.max(1, team.members - 3)} Certified Techs</div>
         </div>
       </div>
     </div>
@@ -369,7 +372,7 @@ function openTeamDetail(id) {
       <div class="modal-section-title">Mission Equipment (${team.equipment.length})</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${team.equipment.length ? team.equipment.map(e => `
-          <span style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:0.75rem;color:var(--text-secondary)">🔧 ${e}</span>
+          <span style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:0.75rem;color:var(--text-secondary)">${e}</span>
         `).join('') : '<span style="color:var(--text-muted);font-size:0.82rem">Standard mountain search kit</span>'}
       </div>
     </div>
@@ -391,7 +394,7 @@ function openTeamDetail(id) {
 
     <div class="form-actions" style="margin-top:20px">
       <button class="btn btn-secondary" onclick="Modal.close()">Close</button>
-      <button class="btn btn-secondary" onclick="logSafetyCheckIn('${team.id}')" title="Record radio check-in">📡 Radio Check-in</button>
+      <button class="btn btn-secondary" onclick="logSafetyCheckIn('${team.id}')" title="Record radio check-in">Radio Check-in</button>
       <button class="btn btn-primary" onclick="Modal.close();openAssignZoneModal('${id}')">Assign Sector</button>
     </div>
   `, 'lg');
@@ -405,7 +408,7 @@ function logSafetyCheckIn(teamId) {
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   SAR.activityLog.unshift({
     type: 'success',
-    text: `📡 Radio Check-in confirmed with <strong>${team.name}</strong> (${team.id}). All personnel nominal.`,
+    text: `Radio Check-in confirmed with <strong>${team.name}</strong> (${team.id}). All personnel nominal.`,
     time: timeStr,
     color: '#10B981'
   });
@@ -421,7 +424,7 @@ function logSafetyCheckIn(teamId) {
 function openAssignZoneModal(teamId) {
   const team  = SAR.getTeam(teamId);
   const zones = SAR.zones;
-  Modal.open(`🗺️ Assign Zone — ${team.name}`, `
+  Modal.open(`Assign Zone — ${team.name}`, `
     <div class="form-group">
       <label class="form-label">Select Search Zone</label>
       <select class="form-control" id="assignZoneSelect">
@@ -510,7 +513,7 @@ async function sendRadioCheckIn(teamId) {
     SAR.activityLog.unshift({
       id: 'act-radio-' + Date.now(),
       type: 'success',
-      text: `<strong>📻 Radio Ping</strong>: Squad ${team.id} (${team.name}) VHF 155.16 MHz verified at Base Receiver`,
+      text: `<strong>Radio Ping</strong>: Squad ${team.id} (${team.name}) VHF 155.16 MHz verified at Base Receiver`,
       time: 'just now',
       color: '#10b981',
     });

@@ -1,24 +1,25 @@
 /* ══════════════════════════════════════════════════════
    SAR COMMAND — RESOURCES
+   Minimalist Linear-style Supply Chain & Equipment Tracker
 ══════════════════════════════════════════════════════ */
 
-let resourceFilter = 'all';
+let resourceStatusFilter = 'all';
+let resourceCategoryFilter = 'all';
 
 function renderResources() {
   const root = document.getElementById('resources-root');
   if (!root) return;
 
-  let filtered = SAR.resources;
-  if (resourceFilter !== 'all') {
-    filtered = SAR.resources.filter(r =>
-      r.status === resourceFilter || r.category === resourceFilter || r.priority === resourceFilter
-    );
-  }
+  const filtered = SAR.resources.filter(r => {
+    const matchStatus = resourceStatusFilter === 'all' || r.status === resourceStatusFilter;
+    const matchCat = resourceCategoryFilter === 'all' || r.category === resourceCategoryFilter;
+    return matchStatus && matchCat;
+  });
 
-  const pending    = SAR.resources.filter(r=>r.status==='pending').length;
-  const approved   = SAR.resources.filter(r=>r.status==='approved').length;
-  const dispatched = SAR.resources.filter(r=>r.status==='dispatched').length;
-  const delivered  = SAR.resources.filter(r=>r.status==='delivered').length;
+  const pending    = SAR.resources.filter(r => r.status === 'pending').length;
+  const approved   = SAR.resources.filter(r => r.status === 'approved').length;
+  const dispatched = SAR.resources.filter(r => r.status === 'dispatched').length;
+  const delivered  = SAR.resources.filter(r => r.status === 'delivered').length;
 
   const isLogisticsOrCmd = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'LOGISTICS');
   const isFieldLeader = typeof SAR !== 'undefined' && SAR.hasRole('FIELD_LEADER');
@@ -30,85 +31,20 @@ function renderResources() {
 
   if (typeof SAR !== 'undefined' && SAR.hasRole('LOGISTICS')) {
     headerTitle = 'Supply Chain & Dispatch Hub';
-    headerSub = `${SAR.resources.length} requisitions · ${pending} awaiting depot clearance · ${dispatched} currently in transit`;
-    newReqBtnText = '+ New Supply Manifest';
+    headerSub = `${SAR.resources.length} requisitions · ${pending} awaiting depot clearance · ${dispatched} in transit`;
+    newReqBtnText = 'New Supply Manifest';
   } else if (isFieldLeader) {
     headerTitle = 'Field Gear & Emergency Supplies';
     headerSub = 'Request tactical equipment, cold-weather suits, medical kits, and thermal drones for your squad';
-    newReqBtnText = '+ Request Field Gear';
+    newReqBtnText = 'Request Field Gear';
   } else if (isCoordinator) {
     headerTitle = 'Operational Sector Supplies';
     headerSub = 'Review and request equipment required across active search sectors';
-    newReqBtnText = '+ Request Sector Gear';
+    newReqBtnText = 'Request Sector Gear';
   } else if (typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER')) {
     headerTitle = 'Logistics & Supply Approvals';
     headerSub = `${SAR.resources.length} requisitions · Full executive approval & dispatch authority`;
-    newReqBtnText = '+ New Resource Request';
-  }
-
-  let warehousePipelineHeader = '';
-  if (isLogisticsOrCmd) {
-    warehousePipelineHeader = `
-      <div class="warehouse-pipeline-header">
-        <div class="wph-top-bar">
-          <div class="wph-title-group">
-            <span class="wph-icon">📦</span>
-            <div>
-              <div class="wph-title">WAREHOUSE DISPATCH & SUPPLY CHAIN PIPELINE</div>
-              <div class="wph-sub">Central Depot Logistics Control • Active Requisition Staging & Transit Control</div>
-            </div>
-          </div>
-          <div class="wph-pipeline-stepper">
-            <div class="wph-step ${pending > 0 ? 'active' : ''}">
-              <span class="wph-step-count">${pending}</span>
-              <span class="wph-step-name">Pending</span>
-            </div>
-            <div class="wph-arrow">➔</div>
-            <div class="wph-step ${approved > 0 ? 'active' : ''}">
-              <span class="wph-step-count">${approved}</span>
-              <span class="wph-step-name">Approved / Staged</span>
-            </div>
-            <div class="wph-arrow">➔</div>
-            <div class="wph-step ${dispatched > 0 ? 'active' : ''}">
-              <span class="wph-step-count">${dispatched}</span>
-              <span class="wph-step-name">In Transit 🚚</span>
-            </div>
-            <div class="wph-arrow">➔</div>
-            <div class="wph-step ${delivered > 0 ? 'active' : ''}">
-              <span class="wph-step-count">${delivered}</span>
-              <span class="wph-step-name">Delivered 📦</span>
-            </div>
-          </div>
-        </div>
-        <div class="wph-quick-actions">
-          <span class="wph-action-label">⚡ 1-Click Pipeline Actions:</span>
-          <button class="btn btn-sm btn-outline-success" onclick="quickBatchAdvance('pending', 'approved')" ${pending === 0 ? 'disabled' : ''} title="Approve all currently pending requests">
-            ✅ Approve All Pending (${pending})
-          </button>
-          <button class="btn btn-sm btn-outline-primary" onclick="quickBatchAdvance('approved', 'dispatched')" ${approved === 0 ? 'disabled' : ''} title="Dispatch all approved resources to the field">
-            🚚 Dispatch Staged Supplies (${approved})
-          </button>
-          <button class="btn btn-sm btn-outline-purple" onclick="quickBatchAdvance('dispatched', 'delivered')" ${dispatched === 0 ? 'disabled' : ''} title="Confirm all in-transit supplies delivered to destination">
-            📦 Confirm In-Transit Delivered (${dispatched})
-          </button>
-        </div>
-      </div>
-    `;
-  } else {
-    warehousePipelineHeader = `
-      <div class="field-gear-requisition-header">
-        <div class="fgrh-left">
-          <span class="fgrh-icon">🎒</span>
-          <div>
-            <div class="fgrh-title">FIELD UNIT SUPPLY & EQUIPMENT TRACKER</div>
-            <div class="fgrh-sub">Submit emergency field requisitions. Warehouse Logistics team approves and dispatches gear.</div>
-          </div>
-        </div>
-        <div class="fgrh-right">
-          <span class="fgrh-badge">🔒 Approvals Managed by Base Logistics</span>
-        </div>
-      </div>
-    `;
+    newReqBtnText = 'New Resource Request';
   }
 
   root.innerHTML = `
@@ -117,45 +53,72 @@ function renderResources() {
         <h2>${headerTitle}</h2>
         <p>${headerSub}</p>
       </div>
-      <button class="btn btn-primary" onclick="openCreateResourceModal()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        ${newReqBtnText}
-      </button>
+      <div class="page-header-actions">
+        ${isLogisticsOrCmd ? `
+          <div class="batch-action-group">
+            <button class="btn btn-sm btn-outline-success" onclick="quickBatchAdvance('pending', 'approved')" ${pending === 0 ? 'disabled' : ''} title="Approve all currently pending requests">
+              Approve All (${pending})
+            </button>
+            <button class="btn btn-sm btn-outline-primary" onclick="quickBatchAdvance('approved', 'dispatched')" ${approved === 0 ? 'disabled' : ''} title="Dispatch all staged supplies to field">
+              Dispatch (${approved})
+            </button>
+            <button class="btn btn-sm btn-outline-purple" onclick="quickBatchAdvance('dispatched', 'delivered')" ${dispatched === 0 ? 'disabled' : ''} title="Confirm all in-transit supplies delivered">
+              Deliver (${dispatched})
+            </button>
+          </div>
+        ` : ''}
+        <button class="btn btn-primary" onclick="openCreateResourceModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>${newReqBtnText}</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Logistics Warehouse Pipeline Header -->
-    ${warehousePipelineHeader}
-
-    <!-- Summary Row -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:0 24px 20px">
-      ${miniStatCard('⏳', 'Pending',    pending,    '#f59e0b')}
-      ${miniStatCard('✅', 'Approved',   approved,   '#3b82f6')}
-      ${miniStatCard('🚚', 'Dispatched', dispatched, '#8b5cf6')}
-      ${miniStatCard('📦', 'Delivered',  delivered,  '#10b981')}
+    <!-- 4 KPI Stat Cards (Minimalist with Status Dot) -->
+    <div class="resource-stats-grid">
+      ${miniStatCard('#f59e0b', 'Pending Clearance', pending)}
+      ${miniStatCard('#3b82f6', 'Approved / Staged', approved)}
+      ${miniStatCard('#8b5cf6', 'In Transit', dispatched)}
+      ${miniStatCard('#10b981', 'Delivered to Field', delivered)}
     </div>
 
-    <div class="filter-bar">
-      ${['all','pending','approved','dispatched','delivered','vehicles','medical','equipment','communication','food'].map(f => `
-        <button class="filter-btn ${resourceFilter===f?'active':''}" onclick="setResourceFilter('${f}')">${f.charAt(0).toUpperCase()+f.slice(1)}</button>
-      `).join('')}
+    <!-- 2-Part Clean Filter Bar -->
+    <div class="resource-filter-bar">
+      <div class="segmented-control">
+        ${['all', 'pending', 'approved', 'dispatched', 'delivered'].map(st => `
+          <button class="segmented-btn ${resourceStatusFilter === st ? 'active' : ''}" onclick="setResourceStatusFilter('${st}')">
+            ${st.charAt(0).toUpperCase() + st.slice(1)}
+          </button>
+        `).join('')}
+      </div>
+      <div class="category-filter-wrap">
+        <select class="category-select" id="resourceCategorySelect" onchange="setResourceCategoryFilter(this.value)">
+          <option value="all" ${resourceCategoryFilter === 'all' ? 'selected' : ''}>All Categories</option>
+          <option value="vehicles" ${resourceCategoryFilter === 'vehicles' ? 'selected' : ''}>Vehicles</option>
+          <option value="medical" ${resourceCategoryFilter === 'medical' ? 'selected' : ''}>Medical</option>
+          <option value="equipment" ${resourceCategoryFilter === 'equipment' ? 'selected' : ''}>Equipment</option>
+          <option value="communication" ${resourceCategoryFilter === 'communication' ? 'selected' : ''}>Communication</option>
+          <option value="food" ${resourceCategoryFilter === 'food' ? 'selected' : ''}>Food & Water</option>
+        </select>
+      </div>
     </div>
 
     <div class="page-content">
       <div class="resources-list">
-        ${filtered.length === 0 ? '<div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-text">No resource requests match this filter</div></div>' : ''}
+        ${filtered.length === 0 ? '<div class="empty-state"><div class="empty-state-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div><div class="empty-state-text">No resource requests match this filter</div></div>' : ''}
         ${filtered.map(r => renderResourceItem(r)).join('')}
       </div>
     </div>
   `;
 }
 
-function miniStatCard(icon, label, value, color) {
+function miniStatCard(color, label, value) {
   return `
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px">
-      <div style="font-size:1.4rem">${icon}</div>
-      <div>
-        <div style="font-size:1.4rem;font-weight:800;color:${color}">${value}</div>
-        <div style="font-size:0.72rem;color:var(--text-muted)">${label}</div>
+    <div class="mini-stat-card">
+      <div class="mini-stat-dot" style="background:${color}"></div>
+      <div class="mini-stat-info">
+        <div class="mini-stat-val" style="color:${color}">${value}</div>
+        <div class="mini-stat-label">${label}</div>
       </div>
     </div>
   `;
@@ -171,28 +134,27 @@ function renderResourceItem(r) {
   if (canApprove) {
     const statusActions = {
       'pending':    `<button class="btn btn-sm btn-success" onclick="updateResourceStatus('${r.id}','approved')">Approve</button><button class="btn btn-sm btn-danger" onclick="updateResourceStatus('${r.id}','rejected')">Reject</button>`,
-      'approved':   `<button class="btn btn-sm btn-primary" onclick="updateResourceStatus('${r.id}','dispatched')">Dispatch 🚚</button>`,
-      'dispatched': `<button class="btn btn-sm btn-success" onclick="updateResourceStatus('${r.id}','delivered')">Mark Delivered 📦</button>`,
-      'delivered':  `<span style="color:var(--green);font-size:0.78rem;font-weight:600">✓ Delivered</span>`,
-      'rejected':   `<span style="color:var(--red);font-size:0.78rem">✗ Rejected</span>`,
+      'approved':   `<button class="btn btn-sm btn-primary" onclick="updateResourceStatus('${r.id}','dispatched')">Dispatch</button>`,
+      'dispatched': `<button class="btn btn-sm btn-success" onclick="updateResourceStatus('${r.id}','delivered')">Mark Delivered</button>`,
+      'delivered':  `<span class="status-confirmed-text">Delivered</span>`,
+      'rejected':   `<span class="status-rejected-text">Rejected</span>`,
     };
     actionButtons = statusActions[r.status] || '';
   } else {
-    // Restricted for Coordinator & Field Leader (approval cycle locked to Commander & Logistics)
     const lockedIndicators = {
-      'pending':    `<span class="resource-lock-badge">🔒 Awaiting Logistics</span>`,
-      'approved':   `<span class="badge badge-approved">Approved (Queue)</span>`,
-      'dispatched': `<span class="badge badge-dispatched">🚚 In Transit</span>`,
-      'delivered':  `<span class="badge badge-delivered">📦 Delivered</span>`,
-      'rejected':   `<span class="badge badge-rejected">✗ Rejected</span>`,
+      'pending':    `<span class="resource-lock-badge">Awaiting Logistics</span>`,
+      'approved':   `<span class="badge badge-approved">Approved</span>`,
+      'dispatched': `<span class="badge badge-dispatched">In Transit</span>`,
+      'delivered':  `<span class="badge badge-delivered">Delivered</span>`,
+      'rejected':   `<span class="badge badge-rejected">Rejected</span>`,
     };
     actionButtons = lockedIndicators[r.status] || '';
   }
 
   return `
     <div class="resource-item" id="res-${r.id}">
-      <div class="resource-icon" style="background:${r.status==='delivered'?'var(--green-glow)':r.status==='pending'?'var(--amber-glow)':r.status==='approved'?'var(--blue-glow)':'var(--purple-glow)'}">
-        <span>${SAR.categoryIcon(r.category)}</span>
+      <div class="resource-icon">
+        ${SAR.categoryIcon(r.category)}
       </div>
       <div class="resource-info">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
@@ -200,13 +162,13 @@ function renderResourceItem(r) {
           <span class="badge badge-${r.priority}">${r.priority}</span>
         </div>
         <div class="resource-meta">
-          <span class="font-mono" style="color:var(--orange)">${r.id}</span>
+          <span class="font-mono" style="color:var(--text-secondary)">${r.id}</span>
           · Qty: <strong>${r.qty} ${r.unit}</strong>
           · Team: <strong>${team ? team.name : '—'}</strong>
           · Incident: <strong>${inc ? inc.id : '—'}</strong>
           · ${SAR.formatTime(r.requestedAt)}
         </div>
-        ${r.notes ? `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">📝 ${r.notes}</div>` : ''}
+        ${r.notes ? `<div class="resource-notes">${r.notes}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">
         <span class="badge badge-${r.status}">${r.status}</span>
@@ -218,8 +180,22 @@ function renderResourceItem(r) {
   `;
 }
 
+function setResourceStatusFilter(st) {
+  resourceStatusFilter = st;
+  renderResources();
+}
+
+function setResourceCategoryFilter(cat) {
+  resourceCategoryFilter = cat;
+  renderResources();
+}
+
 function setResourceFilter(f) {
-  resourceFilter = f;
+  if (['all', 'pending', 'approved', 'dispatched', 'delivered'].includes(f)) {
+    resourceStatusFilter = f;
+  } else {
+    resourceCategoryFilter = f;
+  }
   renderResources();
 }
 
@@ -244,7 +220,7 @@ async function updateResourceStatus(id, newStatus) {
     SAR.activityLog.unshift({
       id: 'act-res-' + Date.now(),
       type: 'info',
-      text: `<strong>${r.id}</strong> "${r.item}" status → <strong>${newStatus.toUpperCase()}</strong>`,
+      text: `<span class="activity-actor-tag">SUPPLY-BASE</span> <strong>${r.id}</strong> "${r.item}" → <strong>${newStatus.toUpperCase()}</strong>`,
       time: 'just now',
       color: '#8b5cf6',
     });
@@ -252,8 +228,7 @@ async function updateResourceStatus(id, newStatus) {
     renderResources();
     updateBadges();
 
-    const msgs = { approved: 'approved ✓', rejected: 'rejected ✗', dispatched: 'dispatched 🚚', delivered: 'delivered 📦' };
-    Toast.show('success', 'Request Updated', `${r.item} ${msgs[newStatus] || newStatus}`);
+    Toast.show('success', 'Request Updated', `${r.item} marked as ${newStatus.toUpperCase()}`);
   } catch (err) {
     Toast.show('error', 'Update Failed', err.message);
   }
@@ -264,7 +239,7 @@ function openCreateResourceModal() {
   const incidents = SAR.incidents.map(i => `<option value="${i.id}">${i.id} — ${i.title.substring(0, 30)}</option>`).join('');
   const teams     = SAR.teams.map(t => `<option value="${t.id}" ${t.id === myTeam ? 'selected' : ''}>${t.name}</option>`).join('');
 
-  Modal.open('📦 New Resource Request', `
+  Modal.open('New Resource Request', `
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Request ID</label>
@@ -273,16 +248,16 @@ function openCreateResourceModal() {
       <div class="form-group">
         <label class="form-label">Priority *</label>
         <select class="form-control" id="resPriority">
-          <option value="critical">🔴 Critical</option>
-          <option value="high">🟠 High</option>
-          <option value="medium" selected>🟡 Medium</option>
-          <option value="low">🔵 Low</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
         </select>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">Item / Resource *</label>
-      <input class="form-control" id="resItem" placeholder="e.g. Rescue Helicopter, Medical Oxygen" />
+      <input class="form-control" id="resItem" placeholder="e.g. Rescue Helicopter, Medical Oxygen, Cold Weather Suits" />
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -291,18 +266,18 @@ function openCreateResourceModal() {
       </div>
       <div class="form-group">
         <label class="form-label">Unit</label>
-        <input class="form-control" id="resUnit" placeholder="e.g. units, kits, sortie" />
+        <input class="form-control" id="resUnit" placeholder="e.g. units, kits, sorties" />
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Category</label>
         <select class="form-control" id="resCat">
-          <option value="vehicles">🚁 Vehicles</option>
-          <option value="medical">💊 Medical</option>
-          <option value="equipment">🔧 Equipment</option>
-          <option value="communication">📡 Communication</option>
-          <option value="food">🍱 Food & Water</option>
+          <option value="vehicles">Vehicles</option>
+          <option value="medical">Medical</option>
+          <option value="equipment">Equipment</option>
+          <option value="communication">Communication</option>
+          <option value="food">Food & Water</option>
         </select>
       </div>
       <div class="form-group">
@@ -316,7 +291,7 @@ function openCreateResourceModal() {
     </div>
     <div class="form-group">
       <label class="form-label">Notes / Justification</label>
-      <textarea class="form-control" id="resNotes" placeholder="Why is this resource needed?"></textarea>
+      <textarea class="form-control" id="resNotes" placeholder="Reason for this equipment requisition..."></textarea>
     </div>
     <div class="form-actions">
       <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
@@ -369,12 +344,17 @@ async function submitCreateResource() {
   };
 
   SAR.resources.push(res);
-  SAR.activityLog.unshift({ type:'warning', text:`<strong>${res.id}</strong> Logistics request for "${item}" logged`, time:'just now', color:'#D97706' });
+  SAR.activityLog.unshift({
+    type: 'warning',
+    text: `<span class="activity-actor-tag">SUPPLY-BASE</span> Request for "${item}" logged (${res.id})`,
+    time: 'just now',
+    color: '#D97706'
+  });
 
   Modal.close();
   renderResources();
   updateBadges();
-  Toast.show('success', 'Request Submitted', `${res.id} queued for command authorization.`);
+  Toast.show('success', 'Request Submitted', `${res.id} queued for authorization.`);
 }
 
 /* ── 1-CLICK LOGISTICS PIPELINE BATCH ADVANCE ────── */
@@ -411,7 +391,7 @@ async function quickBatchAdvance(fromStatus, toStatus) {
   SAR.activityLog.unshift({
     id: 'act-res-batch-' + Date.now(),
     type: 'info',
-    text: `<strong>[${role} | ${callsign}]</strong> Batch moved ${count} items: ${fromStatus.toUpperCase()} ➔ <strong>${toStatus.toUpperCase()}</strong>`,
+    text: `<span class="activity-actor-tag">${callsign}</span> Batch advanced ${count} items to <strong>${toStatus.toUpperCase()}</strong>`,
     time: 'just now',
     color: '#f59e0b',
   });

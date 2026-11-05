@@ -28,107 +28,94 @@
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-brand">
       <div class="brand-icon">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/><path d="M11 8v6"/><path d="M8 11h6"/>
         </svg>
       </div>
       <div class="brand-text">
         <span class="brand-name">SAR Command</span>
-        <span class="brand-tagline">Rescue Coordination</span>
+        <span class="brand-tagline">Tactical Net</span>
       </div>
-      <button id="sidebarToggle" class="sidebar-toggle" title="Toggle Sidebar">
+      <button id="sidebarCloseBtn" class="sidebar-close-btn" title="Close Sidebar" aria-label="Close sidebar">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
-    </div>
-
-    <!-- ── PROMINENT SIDEBAR ROLE HEADER CARD ── -->
-    <div id="sidebarRoleCard" class="sidebar-role-card role-commander" title="Active Operator Tactical Clearance">
-      <div class="src-icon-wrap">
-        <span class="src-icon" id="srcRoleIcon">🎖️</span>
-      </div>
-      <div class="src-info">
-        <div class="src-title-row">
-          <span class="src-role-title" id="srcRoleTitle">Incident Commander</span>
-          <span class="src-callsign" id="srcCallsign">COMMAND-01</span>
-        </div>
-        <div class="src-clearance" id="srcClearance">Level 4 • Supreme Command</div>
-      </div>
     </div>
 
     <nav class="sidebar-nav">
       <div class="nav-section-label" id="nav-section-ops">Operations</div>
       <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
         <span class="nav-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
           </svg>
         </span>
-        <span class="nav-label">Dashboard</span>
+        <span class="nav-label">Command Overview</span>
       </a>
       <a href="#" class="nav-item" data-page="map" id="nav-map">
         <span class="nav-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
             <line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/>
           </svg>
         </span>
-        <span class="nav-label">Search Map</span>
+        <span class="nav-label">Master GIS & Sectors</span>
       </a>
       <a href="#" class="nav-item" data-page="incidents" id="nav-incidents">
         <span class="nav-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
             <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
         </span>
-        <span class="nav-label">Incidents</span>
-        <span class="nav-badge" id="incident-badge">3</span>
+        <span class="nav-label">Incident Command</span>
+        <span class="nav-badge" id="incident-badge">0</span>
       </a>
       <a href="#" class="nav-item" data-page="teams" id="nav-teams">
         <span class="nav-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
             <circle cx="9" cy="7" r="4"/>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
         </span>
-        <span class="nav-label">Teams</span>
+        <span class="nav-label">Squad Deployment</span>
       </a>
-      <div class="nav-section-label" id="nav-section-res">Resources & Intel</div>
+      <div class="nav-section-label" id="nav-section-res">Logistics & Intel</div>
       <a href="#" class="nav-item" data-page="resources" id="nav-resources">
         <span class="nav-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
           </svg>
         </span>
-        <span class="nav-label">Resources</span>
-        <span class="nav-badge pending" id="resource-badge">5</span>
+        <span class="nav-label">Supply Approvals</span>
+        <span class="nav-badge pending" id="resource-badge">0</span>
       </a>
       <a href="#" class="nav-item" data-page="findings" id="nav-findings">
         <span class="nav-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
           </svg>
         </span>
-        <span class="nav-label">Findings</span>
+        <span class="nav-label">Intel & Findings</span>
       </a>
     </nav>
 
     <div class="sidebar-footer">
-      <div class="connection-status" id="connectionStatus">
-        <span class="status-dot pulse-green"></span>
-        <span class="status-text">Live • Connected</span>
-      </div>
-      <div class="user-profile" id="sidebarUserProfile" title="Click to Switch Tactical Role">
+      <div class="user-profile" id="sidebarUserProfile" title="Switch Operator Role">
         <div class="user-avatar" id="sidebarUserAvatar">IC</div>
         <div class="user-info">
           <span class="user-name" id="sidebarUserName">Col. Vikram Rathore</span>
           <span class="user-role" id="sidebarUserRole">COMMANDER • COMMAND-01</span>
+        </div>
+        <div class="user-switch-icon" title="Switch Role">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-5v5h5"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 5v-5h-5"/>
+          </svg>
         </div>
       </div>
     </div>
@@ -143,62 +130,54 @@
     <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar-left">
-        <button id="mobileMenuBtn" class="mobile-menu-btn" title="Open Menu" aria-label="Toggle navigation drawer">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
+        <!-- Modern 3-bar animated Hamburger button -->
+        <button id="burgerBtn" class="burger-btn" aria-label="Toggle navigation" title="Toggle Sidebar">
+          <span class="burger-line top-line"></span>
+          <span class="burger-line mid-line"></span>
+          <span class="burger-line bot-line"></span>
         </button>
+
         <div class="topbar-titles">
-          <h1 class="page-title" id="pageTitle">Operation Dashboard</h1>
+          <h1 class="page-title" id="pageTitle">Command Overview</h1>
           <div class="breadcrumb" id="breadcrumb">
             <span>SAR Command</span>
-            <span class="bc-sep">›</span>
-            <span id="breadcrumbCurrent">Dashboard</span>
+            <span class="bc-sep">/</span>
+            <span id="breadcrumbCurrent">Overview</span>
           </div>
         </div>
       </div>
-      <div class="topbar-right">
-        <!-- Tactical Identity Pill -->
-        <div id="topbarIdentityPill" class="topbar-identity-pill" title="Tactical Operator Clearance">
-          <div class="identity-avatar" id="topbarUserAvatar">IC</div>
-          <div class="identity-meta">
-            <div class="identity-name-row">
-              <span class="identity-name" id="topbarUserName">Col. Vikram Rathore</span>
-              <span class="identity-callsign" id="topbarUserCallsign">COMMAND-01</span>
-            </div>
-            <div class="identity-role-row">
-              <span class="role-badge role-badge-commander" id="topbarUserRoleBadge">COMMANDER</span>
-              <span class="identity-status-dot pulse-green"></span>
-              <span class="identity-status-label">ACTIVE CLEARANCE</span>
-            </div>
-          </div>
-          <button class="switch-role-btn" id="switchRoleBtn" title="Switch Tactical Role or Re-authenticate" type="button">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-5v5h5"/>
-              <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 5v-5h-5"/>
-            </svg>
-            <span>Switch Role</span>
-          </button>
-        </div>
 
+      <div class="topbar-right">
+        <!-- Search bar (visible on desktop) -->
         <div class="search-bar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
-          <input type="text" id="globalSearch" placeholder="Search incidents, teams, zones…" />
+          <input type="text" id="globalSearch" placeholder="Search incidents, teams, sectors…" />
         </div>
-        <button class="topbar-btn" id="notifBtn" title="Notifications">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+        <!-- Subtle Role Switcher Dropdown Button -->
+        <button class="topbar-role-btn" id="switchRoleBtn" title="Switch Operator Role" type="button">
+          <span class="topbar-role-dot pulse-green"></span>
+          <span class="topbar-role-label" id="topbarUserRoleBadge">Commander</span>
+          <svg class="chevron-down" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+
+        <!-- Compact Notification Bell -->
+        <button class="topbar-btn" id="notifBtn" title="Live Notifications">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
           <span class="notif-dot"></span>
         </button>
+
+        <!-- Compact Shift Timer -->
         <div class="operation-time">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-          <span id="opTime">00:00:00</span>
+          <span class="time-label">Shift</span>
+          <span id="opTime" class="time-mono">00:00:00</span>
         </div>
       </div>
     </header>
@@ -245,7 +224,11 @@
                 <option value="off-duty">Off-duty</option>
               </select>
               <button class="layer-btn draw-zone-btn" id="drawZoneBtn" title="Draw a new search zone polygon">
-                ✏️ Designate Sector
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px">
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                  <path d="m15 5 4 4"/>
+                </svg>
+                <span>Designate Sector</span>
               </button>
               <button class="layer-btn" id="cancelDrawBtn" title="Cancel drawing" style="display:none;color:var(--red);border-color:rgba(239,68,68,0.4)">
                 ✕ Abort
@@ -359,7 +342,11 @@
           <!-- Role 1: Commander -->
           <button type="button" class="demo-role-card role-card-commander" data-role="commander">
             <div class="role-card-top">
-              <span class="role-icon">🎖️</span>
+              <span class="role-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </span>
               <span class="role-tag role-tag-commander">COMMANDER</span>
             </div>
             <div class="role-card-name">Col. Vikram Rathore</div>
@@ -371,7 +358,15 @@
           <!-- Role 2: Coordinator -->
           <button type="button" class="demo-role-card role-card-coordinator" data-role="coordinator">
             <div class="role-card-top">
-              <span class="role-icon">📡</span>
+              <span class="role-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+                  <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+                  <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
+                </svg>
+              </span>
               <span class="role-tag role-tag-coordinator">COORDINATOR</span>
             </div>
             <div class="role-card-name">Major Sunita Rao</div>
@@ -383,7 +378,11 @@
           <!-- Role 3: Field Leader -->
           <button type="button" class="demo-role-card role-card-leader" data-role="leader">
             <div class="role-card-top">
-              <span class="role-icon">🥾</span>
+              <span class="role-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                </svg>
+              </span>
               <span class="role-tag role-tag-leader">FIELD LEADER</span>
             </div>
             <div class="role-card-name">Capt. Rajesh Kumar</div>
@@ -395,7 +394,14 @@
           <!-- Role 4: Logistics -->
           <button type="button" class="demo-role-card role-card-logistics" data-role="logistics">
             <div class="role-card-top">
-              <span class="role-icon">📦</span>
+              <span class="role-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m7.5 4.27 9 5.15"/>
+                  <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                  <path d="m3.3 7 8.7 5 8.7-5"/>
+                  <path d="M12 22V12"/>
+                </svg>
+              </span>
               <span class="role-tag role-tag-logistics">LOGISTICS</span>
             </div>
             <div class="role-card-name">Lt. Amit Sharma</div>
@@ -442,7 +448,13 @@
         <div class="auth-actions">
           <button type="submit" id="authSubmitBtn" class="btn btn-primary auth-submit-btn">
             <span class="auth-spinner hidden" id="authSpinner"></span>
-            <span id="authSubmitText">⚡ Authenticate Session</span>
+            <span id="authSubmitText">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Authenticate Session
+            </span>
           </button>
         </div>
       </form>

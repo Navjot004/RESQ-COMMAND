@@ -77,7 +77,7 @@ const ROLE_NAV_CONFIG = {
     roleName: 'Incident Commander',
     callsign: 'COMMAND-01',
     clearance: 'Level 4 • Supreme Command',
-    icon: '🎖️',
+    icon: '',
     cardClass: 'role-commander',
     defaultPage: 'dashboard',
     sectionOpsLabel: 'Command Operations',
@@ -98,7 +98,7 @@ const ROLE_NAV_CONFIG = {
     roleName: 'Zone Coordinator',
     callsign: 'OPS-COORD-01',
     clearance: 'Level 3 • Sector Dispatch',
-    icon: '📡',
+    icon: '',
     cardClass: 'role-coordinator',
     defaultPage: 'map',
     sectionOpsLabel: 'Sector Operations',
@@ -119,7 +119,7 @@ const ROLE_NAV_CONFIG = {
     roleName: 'Field Team Leader',
     callsign: 'T-01-LEAD',
     clearance: 'Level 2 • Tactical Field Unit',
-    icon: '🥾',
+    icon: '',
     cardClass: 'role-leader',
     defaultPage: 'map', // Default landing page for FIELD_LEADER
     sectionOpsLabel: 'Field Operations',
@@ -140,7 +140,7 @@ const ROLE_NAV_CONFIG = {
     roleName: 'Logistics Officer',
     callsign: 'SUPPLY-BASE',
     clearance: 'Level 2 • Warehouse & Depot',
-    icon: '📦',
+    icon: '',
     cardClass: 'role-logistics',
     defaultPage: 'resources', // Default landing page for LOGISTICS
     sectionOpsLabel: 'Supply & Drop-Zones',
@@ -174,7 +174,17 @@ const App = {
     const config = ROLE_NAV_CONFIG[currentRole] || ROLE_NAV_CONFIG.COMMANDER;
     const callsign = user?.callsign || config.callsign;
 
-    // 1. Update prominent Sidebar Role Header Card
+    // 1. Update Topbar & Sidebar identity
+    const topRoleBadge = document.getElementById('topbarUserRoleBadge');
+    if (topRoleBadge) topRoleBadge.textContent = config.roleName;
+
+    const sbUserName = document.getElementById('sidebarUserName');
+    if (sbUserName) sbUserName.textContent = user?.name || config.roleName;
+
+    const sbUserCallsign = document.getElementById('sidebarUserCallsign');
+    if (sbUserCallsign) sbUserCallsign.textContent = `${callsign} • ${config.roleName}`;
+
+    // Legacy card fallback if present
     const card = document.getElementById('sidebarRoleCard');
     const icon = document.getElementById('srcRoleIcon');
     const title = document.getElementById('srcRoleTitle');
@@ -338,12 +348,15 @@ function renderFieldMissionConsole(containerId) {
   container.innerHTML = `
     <div class="field-mission-console">
       <div class="fmc-col-lead">
-        <div class="fmc-badge">🥾 FIELD SQUAD MISSION CONSOLE</div>
+        <div class="fmc-badge">
+          <span class="fmc-badge-dot"></span>
+          FIELD SQUAD MISSION CONSOLE
+        </div>
         <div class="fmc-team-info">
           <span class="fmc-team-name">${myTeam.name}</span>
           <span class="fmc-team-id">(${myTeam.id})</span>
           <span class="fmc-status-pill fmc-status-${myTeam.status}">${myTeam.status.toUpperCase()}</span>
-          <span class="fmc-comms">📡 ${myTeam.contact || 'VHF 155.160 MHz'}</span>
+          <span class="fmc-comms">${myTeam.contact || 'VHF 155.160 MHz'}</span>
         </div>
       </div>
 
@@ -365,10 +378,21 @@ function renderFieldMissionConsole(containerId) {
 
       <div class="fmc-col-actions">
         <button class="btn btn-sm btn-success fmc-action-btn" onclick="sendRadioCheckIn('${myTeam.id}')" title="Transmit VHF GPS & Heartbeat">
-          📡 Send Radio Check-in
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px">
+            <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/>
+            <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/>
+            <circle cx="12" cy="12" r="2"/>
+            <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/>
+            <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
+          </svg>
+          Radio Check-in
         </button>
         <button class="btn btn-sm btn-accent fmc-action-btn" onclick="openLogFindingModal()" title="Log Clue, Survivor, or Hazard">
-          + 📍 Log Clue / Survivor
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          Log Finding
         </button>
       </div>
     </div>
@@ -422,26 +446,48 @@ async function saveConsoleSectorProgress(sliderId, fallbackZoneId) {
 // ── SIDEBAR & MOBILE DRAWER TOGGLE ──────────────────────
 const sidebarEl = document.getElementById('sidebar');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const burgerBtn = document.getElementById('burgerBtn');
+const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
 
-document.getElementById('sidebarToggle')?.addEventListener('click', () => {
-  sidebarEl?.classList.toggle('collapsed');
-  if (App.currentPage === 'map' && sarMap) {
-    setTimeout(() => sarMap.invalidateSize(), 350);
-  }
-});
-
-function closeMobileDrawer() {
-  sidebarEl?.classList.remove('mobile-open');
-  sidebarBackdrop?.classList.remove('active');
+function openDrawer() {
+  sidebarEl?.classList.add('mobile-open');
+  sidebarBackdrop?.classList.add('active');
+  burgerBtn?.classList.add('active');
 }
 
-mobileMenuBtn?.addEventListener('click', () => {
-  sidebarEl?.classList.toggle('mobile-open');
-  sidebarBackdrop?.classList.toggle('active');
-});
+function closeDrawer() {
+  sidebarEl?.classList.remove('mobile-open');
+  sidebarBackdrop?.classList.remove('active');
+  burgerBtn?.classList.remove('active');
+}
 
-sidebarBackdrop?.addEventListener('click', closeMobileDrawer);
+function toggleNavigation() {
+  if (window.innerWidth <= 768) {
+    if (sidebarEl?.classList.contains('mobile-open')) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  } else {
+    sidebarEl?.classList.toggle('collapsed');
+    burgerBtn?.classList.toggle('active', sidebarEl?.classList.contains('collapsed'));
+    if (App.currentPage === 'map' && sarMap) {
+      setTimeout(() => sarMap.invalidateSize(), 350);
+    }
+  }
+}
+
+burgerBtn?.addEventListener('click', toggleNavigation);
+sidebarCloseBtn?.addEventListener('click', closeDrawer);
+sidebarBackdrop?.addEventListener('click', closeDrawer);
+
+// Close on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeDrawer();
+    if (typeof Modal !== 'undefined') Modal.close();
+  }
+});
 
 // ── NAV CLICK HANDLERS ────────────────────────────────
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -452,7 +498,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
       App.navigate(page);
       // Auto-close mobile drawer when user taps a navigation link
       if (window.innerWidth <= 768) {
-        closeMobileDrawer();
+        closeDrawer();
       }
     }
   });
@@ -486,7 +532,7 @@ function updateBadges() {
 // ── NOTIFICATIONS BTN ─────────────────────────────────
 document.getElementById('notifBtn').addEventListener('click', () => {
   const recentActivity = SAR.activityLog.slice(0,5);
-  Modal.open('🔔 Notifications', `
+  Modal.open('Notifications', `
     <div style="display:flex;flex-direction:column;gap:0">
       ${recentActivity.map(a => `
         <div style="display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)">

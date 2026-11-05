@@ -108,24 +108,24 @@ const SAR = {
 
   categoryIcon(cat) {
     const icons = {
-      vehicles: '🚢',
-      aviation: '🚁',
-      medical: '🩺',
-      equipment: '⚙️',
-      communication: '📡',
-      food: '🥫',
+      vehicles: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>`,
+      aviation: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>`,
+      medical: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>`,
+      equipment: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`,
+      communication: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>`,
+      food: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`,
     };
-    return icons[cat] || '📦';
+    return icons[cat] || `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
   },
 
   findingIcon(type) {
     const icons = {
-      'person-found': '👤',
-      clue: '🔎',
-      evidence: '🧭',
-      hazard: '⚠️',
+      'person-found': `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+      clue: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+      evidence: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`,
+      hazard: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
     };
-    return icons[type] || '📍';
+    return icons[type] || `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
   },
 };
 
@@ -138,7 +138,7 @@ function refreshDynamicActivityLog() {
     logs.push({
       id: `act-f-${idx}`,
       type: f.type === 'hazard' ? 'error' : 'success',
-      text: `<span class="activity-actor-tag actor-leader">[FIELD_LEADER | T-01-LEAD]</span> Logged ${f.type.toUpperCase()}: <strong>${f.title}</strong> at ${f.location}`,
+      text: `<span class="activity-actor-tag">T-01-LEAD</span> Logged ${f.type.toUpperCase()}: <strong>${f.title}</strong> at ${f.location}`,
       time: SAR.formatTime(f.reportedAt),
       color: f.type === 'hazard' ? '#EF4444' : '#10B981',
     });
@@ -149,7 +149,7 @@ function refreshDynamicActivityLog() {
     logs.push({
       id: `act-i-${idx}`,
       type: inc.priority === 'critical' ? 'error' : 'info',
-      text: `<span class="activity-actor-tag actor-commander">[COMMANDER | COMMAND-01]</span> Declared ${inc.priority.toUpperCase()} incident: <strong>${inc.id}</strong> (${inc.title})`,
+      text: `<span class="activity-actor-tag">COMMAND-01</span> Declared ${inc.priority.toUpperCase()} incident: <strong>${inc.id}</strong> (${inc.title})`,
       time: SAR.formatTime(inc.createdAt),
       color: inc.priority === 'critical' ? '#EF4444' : '#EA580C',
     });
@@ -160,7 +160,7 @@ function refreshDynamicActivityLog() {
     logs.push({
       id: `act-r-${idx}`,
       type: 'info',
-      text: `<span class="activity-actor-tag actor-logistics">[LOGISTICS | SUPPLY-BASE]</span> ${res.status.toUpperCase()} supply order: <strong>${res.qty} ${res.unit} ${res.item}</strong>`,
+      text: `<span class="activity-actor-tag">SUPPLY-BASE</span> ${res.status.toUpperCase()} supply order: <strong>${res.qty} ${res.unit} ${res.item}</strong>`,
       time: SAR.formatTime(res.requestedAt),
       color: res.status === 'delivered' ? '#10B981' : '#F59E0B',
     });
@@ -170,7 +170,7 @@ function refreshDynamicActivityLog() {
   logs.push({
     id: `act-radio-init`,
     type: 'success',
-    text: `<span class="activity-actor-tag actor-leader">[FIELD_LEADER | T-01-LEAD]</span> Broadcasted VHF radio check-in (Signal 5/5 at Base)`,
+    text: `<span class="activity-actor-tag">T-01-LEAD</span> Broadcasted VHF radio check-in (Signal 5/5 at Base)`,
     time: '2m ago',
     color: '#10B981',
   });
