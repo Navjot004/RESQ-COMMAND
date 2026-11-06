@@ -282,6 +282,11 @@ const App = {
       if (typeof stopLiveFeed === 'function') stopLiveFeed();
     }
 
+    // Cancel any active map drawing if navigating away from map
+    if (this.currentPage === 'map' && page !== 'map') {
+      if (typeof disableDrawMode === 'function') disableDrawMode();
+    }
+
     this.currentPage = page;
 
     // Render target page

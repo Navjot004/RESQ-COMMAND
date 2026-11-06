@@ -9,10 +9,12 @@
 ══════════════════════════════════════════════════════ */
 
 /* ── State ────────────────────────────────────────── */
-let sarMap          = null;
-let mapInitialized  = false;   // true after first init
-let drawControl     = null;
-let drawnItems      = null;    // FeatureGroup for drawn polygons
+let sarMap              = null;
+let mapInitialized      = false;   // true after first init
+let drawControl         = null;
+let drawnItems          = null;    // FeatureGroup for drawn polygons
+let activePolygonDrawer = null;    // Active L.Draw.Polygon instance
+let isDisablingDraw     = false;   // Re-entrancy guard for disabling draw mode
 
 let zoneLayerGroup    = null;
 let teamLayerGroup    = null;
@@ -120,6 +122,19 @@ function initMap() {
     });
     // Draw control is added to map only when "Draw Zone" is active (see button handler below)
 
+    /* Draw started → switch buttons to Abort */
+    sarMap.on(L.Draw.Event.DRAWSTART, function(e) {
+      const drawBtn   = document.getElementById('drawZoneBtn');
+      const cancelBtn = document.getElementById('cancelDrawBtn');
+      if (drawBtn)   drawBtn.style.display = 'none';
+      if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+    });
+
+    /* Draw stopped (Escape key, programmatic abort, or completed) */
+    sarMap.on(L.Draw.Event.DRAWSTOP, function(e) {
+      disableDrawMode();
+    });
+
     /* Draw created → prompt for zone name */
     sarMap.on(L.Draw.Event.CREATED, function(e) {
       const layer = e.layer;
@@ -203,10 +218,17 @@ function initMap() {
   const drawBtn   = document.getElementById('drawZoneBtn');
   const cancelBtn = document.getElementById('cancelDrawBtn');
   if (drawBtn) {
-    drawBtn.addEventListener('click', () => enableDrawMode());
+    drawBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      enableDrawMode();
+    });
   }
   if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => disableDrawMode());
+    cancelBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      abortDrawing();
+    });
   }
 
   // Apply role-based map controls
@@ -298,20 +320,116 @@ async function updateFieldSectorProgress() {
 /* ═══════════════════ DRAW MODE ═══════════════════════ */
 function enableDrawMode() {
   if (!sarMap || typeof L.Control.Draw === 'undefined') return;
-  sarMap.addControl(drawControl);
-  // Activate polygon draw immediately
-  new L.Draw.Polygon(sarMap, drawControl.options.draw.polygon).enable();
-  document.getElementById('drawZoneBtn').style.display    = 'none';
-  document.getElementById('cancelDrawBtn').style.display  = '';
-  Toast.show('info', 'Draw Mode', 'Click on the map to draw a search zone polygon. Double-click to finish.');
+
+  // 1. Clean up any existing active drawer first
+  if (activePolygonDrawer) {
+    try { activePolygonDrawer.disable(); } catch (e) {}
+    activePolygonDrawer = null;
+  }
+
+  // 2. Attach drawControl toolbar to map if not present
+  if (drawControl) {
+    try {
+      sarMap.addControl(drawControl);
+    } catch (e) {
+      /* already added */
+    }
+  }
+
+  // 3. Instantiate and enable active polygon drawer
+  const polyOptions = (drawControl && drawControl.options && drawControl.options.draw && drawControl.options.draw.polygon)
+    ? drawControl.options.draw.polygon
+    : {
+        allowIntersection: false,
+        showArea: true,
+        shapeOptions: { color: '#f97316', fillOpacity: 0.15, weight: 2 },
+      };
+
+  activePolygonDrawer = new L.Draw.Polygon(sarMap, polyOptions);
+  activePolygonDrawer.enable();
+
+  // 4. Toggle button visibility
+  const drawBtn   = document.getElementById('drawZoneBtn');
+  const cancelBtn = document.getElementById('cancelDrawBtn');
+  if (drawBtn)   drawBtn.style.display   = 'none';
+  if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+
+  Toast.show('info', 'Draw Mode Active', 'Click on map to place perimeter vertices. Double-click or click first point to close.');
 }
 
 function disableDrawMode() {
-  if (!sarMap || !drawControl) return;
-  try { sarMap.removeControl(drawControl); } catch(e) { /* already removed */ }
-  document.getElementById('drawZoneBtn').style.display    = '';
-  document.getElementById('cancelDrawBtn').style.display  = 'none';
+  if (isDisablingDraw) return;
+  isDisablingDraw = true;
+
+  try {
+    // 1. Disable active polygon drawer instance (clears markers, guides, and tooltips)
+    if (activePolygonDrawer) {
+      try {
+        activePolygonDrawer.disable();
+      } catch (e) {
+        console.warn('Error disabling activePolygonDrawer:', e);
+      }
+      activePolygonDrawer = null;
+    }
+
+    // 2. Disable any active toolbar modes within drawControl
+    if (drawControl && drawControl._toolbars) {
+      Object.keys(drawControl._toolbars).forEach(tbKey => {
+        const tb = drawControl._toolbars[tbKey];
+        if (tb && typeof tb.disable === 'function') {
+          try { tb.disable(); } catch (e) {}
+        }
+        if (tb && tb._modes) {
+          Object.keys(tb._modes).forEach(mKey => {
+            const m = tb._modes[mKey];
+            if (m && m.handler && typeof m.handler.disable === 'function') {
+              try {
+                if (m.handler.enabled && m.handler.enabled()) {
+                  m.handler.disable();
+                }
+              } catch (e) {}
+            }
+          });
+        }
+      });
+    }
+
+    // 3. Remove drawControl toolbar from map
+    if (sarMap && drawControl) {
+      try {
+        sarMap.removeControl(drawControl);
+      } catch (e) {
+        /* already removed */
+      }
+    }
+
+    // 4. Clean up any lingering drawing DOM artifacts
+    try {
+      document.querySelectorAll('.leaflet-draw-tooltip').forEach(el => el.remove());
+      document.querySelectorAll('.leaflet-draw-guide-dash').forEach(el => el.remove());
+    } catch (e) {}
+
+    // 5. Restore button UI
+    const drawBtn   = document.getElementById('drawZoneBtn');
+    const cancelBtn = document.getElementById('cancelDrawBtn');
+    const canDraw   = typeof SAR !== 'undefined' && SAR.hasRole('COMMANDER', 'COORDINATOR');
+
+    if (drawBtn)   drawBtn.style.display   = canDraw ? '' : 'none';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+  } finally {
+    isDisablingDraw = false;
+  }
 }
+
+function abortDrawing() {
+  disableDrawMode();
+  Toast.show('info', 'Draw Aborted', 'Sector perimeter designation cancelled.');
+}
+
+// Expose globally for inline onclick handlers and cross-module calls
+window.enableDrawMode  = enableDrawMode;
+window.disableDrawMode = disableDrawMode;
+window.abortDrawing    = abortDrawing;
 
 /* ── Prompt for zone metadata after drawing ── */
 function promptNewZone(layer) {
